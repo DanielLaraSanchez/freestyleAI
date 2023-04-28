@@ -10,6 +10,7 @@
   <video id="remoteVideo" autoplay></video>
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    const roomId = 'test-room';
     const socket = io();
     const localVideo = document.getElementById('localVideo');
     const remoteVideo = document.getElementById('remoteVideo');
@@ -28,7 +29,7 @@
 
     rtcPeerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit('icecandidate', { candidate: event.candidate });
+        socket.emit('icecandidate', { candidate: event.candidate, target: event.target });
       }
     };
 
@@ -50,11 +51,18 @@
       rtcPeerConnection.addIceCandidate(candidate);
     });
 
-    socket.on('connect', async () => {
+    socket.on('room_created', async () => {
+      console.log('Room created, waiting for another user to join');
+    });
+
+    socket.on('room_joined', async () => {
+      console.log('Another user joined, creating and sending offer');
       const offer = await rtcPeerConnection.createOffer();
       await rtcPeerConnection.setLocalDescription(offer);
-      socket.emit('offer', { sdp: rtcPeerConnection.localDescription });
+      socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: roomId });
     });
+
+    socket.emit('join-room', roomId);
   </script>
 </body>
 </html>
