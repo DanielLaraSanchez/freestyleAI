@@ -43,9 +43,15 @@
 
 socket.on('room_joined_client', async () => {
   console.log('Another user joined, creating and sending offer');
-  remoteId = roomId;
-  console.log('remoteId after room_joined_client:', remoteId);
+
+  // Set remoteId based on the room information
+  remoteId = socket.id === rooms[roomId].creator ? rooms[roomId].joiner : rooms[roomId].creator;
+
+  const offer = await rtcPeerConnection.createOffer();
+  await rtcPeerConnection.setLocalDescription(offer);
+  socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: remoteId });
 });
+
 
     socket.on('answer', async (data) => {
       const desc = new RTCSessionDescription(data.sdp);

@@ -2,28 +2,30 @@ const express = require("express");
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
+const rooms = {};
 
 app.use(express.static("public"));
 
 io.on("connection", (socket) => {
   console.log("User connected: " + socket.id);
-  socket.on("join-room", (roomId) => {
+  socket.on('join-room', (roomId) => {
     const roomClients = io.sockets.adapter.rooms.get(roomId) || new Set();
     const numberOfClients = roomClients.size;
-
+  
     if (numberOfClients === 0) {
-      console.log(`Creating room ${roomId} and emitting room_created`);
+      console.log(`Creating room ${roomId}`);
       socket.join(roomId);
-      io.in(roomId).emit('room_created_server', roomId);
-      socket.remoteId = roomId;
+      rooms[roomId] = { creator: socket.id };
     } else if (numberOfClients === 1) {
-      console.log(`Joining room ${roomId} and emitting room_joined`);
+      console.log(`Joining room ${roomId}`);
       socket.join(roomId);
+      rooms[roomId].joiner = socket.id;
+  
+      // Emit room_joined_server to both clients in the room
       io.in(roomId).emit('room_joined_server', roomId);
-      socket.remoteId = roomId;
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
-      socket.emit("room_full", roomId);
+      socket.emit('room_full', roomId);
     }
   });
 
