@@ -35,18 +35,17 @@
 
     let remoteId;
 
- socket.on('room_created_client', async () => {
-      console.log('Room created, waiting for another user to join');
-      remoteId = roomId;
-    });
+    socket.on('room_created_client', async () => {
+  console.log('Room created, waiting for another user to join');
+  remoteId = roomId;
+  console.log('remoteId after room_created_client:', remoteId);
+});
 
-    socket.on('room_joined_client', async () => {
-      console.log('Another user joined, creating and sending offer');
-      remoteId = roomId;
-      const offer = await rtcPeerConnection.createOffer();
-      await rtcPeerConnection.setLocalDescription(offer);
-      socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: roomId });
-    });
+socket.on('room_joined_client', async () => {
+  console.log('Another user joined, creating and sending offer');
+  remoteId = roomId;
+  console.log('remoteId after room_joined_client:', remoteId);
+});
 
     socket.on('answer', async (data) => {
       const desc = new RTCSessionDescription(data.sdp);
