@@ -6,7 +6,7 @@
   <title>WebRTC Video Chat</title>
 </head>
 <body>
-  <video id="localVideo" autoplay></video>
+  <video id="localVideo" autoplay muted></video>
   <video id="remoteVideo" autoplay></video>
   <script src="/socket.io/socket.io.js"></script>
   <script>
@@ -29,7 +29,7 @@
 
     rtcPeerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit('icecandidate', { candidate: event.candidate, target: event.target });
+        socket.emit('icecandidate', { candidate: event.candidate, target: data.sender });
       }
     };
 
