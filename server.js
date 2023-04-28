@@ -14,12 +14,12 @@ io.on("connection", (socket) => {
     if (numberOfClients === 0) {
       console.log(`Creating room ${roomId} and emitting room_created`);
       socket.join(roomId);
-      socket.emit("room_created_server", roomId);
+      io.in(roomId).emit('room_created_server', roomId);
       socket.remoteId = roomId;
     } else if (numberOfClients === 1) {
       console.log(`Joining room ${roomId} and emitting room_joined`);
       socket.join(roomId);
-      socket.emit("room_joined_server", roomId);
+      io.in(roomId).emit('room_joined_server', roomId);
       socket.remoteId = roomId;
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
@@ -31,24 +31,26 @@ io.on("connection", (socket) => {
     console.log("User disconnected: " + socket.id);
   });
 
-  socket.on("offer", (data) => {
-    console.log("Offer data received:", data);
-    console.log(`Forwarding offer from ${socket.id} to ${data.target}`);
-    socket.to(data.target).emit("offer", { sdp: data.sdp, sender: socket.id });
+  socket.on('offer', async (data) => {
+    console.log('Offer received:', data);
+    remoteId = data.sender;
+    const desc = new RTCSessionDescription(data.sdp);
+    await rtcPeerConnection.setRemoteDescription(desc);
+    const answer = await rtcPeerConnection.createAnswer();
+    await rtcPeerConnection.setLocalDescription(answer);
+    socket.emit('answer', { sdp: rtcPeerConnection.localDescription, target: data.sender });
   });
-
-  socket.on("answer", (data) => {
-    console.log("Answer data received:", data);
-    console.log(`Forwarding answer from ${socket.id} to ${data.target}`);
-    socket.to(data.target).emit("answer", { sdp: data.sdp, sender: socket.id });
+  
+  socket.on('answer', async (data) => {
+    console.log('Answer received:', data);
+    const desc = new RTCSessionDescription(data.sdp);
+    await rtcPeerConnection.setRemoteDescription(desc);
   });
-
-  socket.on("icecandidate", (data) => {
-    console.log("ICE candidate data received:", data);
-    console.log(`Forwarding ICE candidate from ${socket.id} to ${data.target}`);
-    socket
-      .to(data.target)
-      .emit("icecandidate", { candidate: data.candidate, sender: socket.id });
+  
+  socket.on('icecandidate', (data) => {
+    console.log('ICE candidate received:', data);
+    const candidate = new RTCIceCandidate(data.candidate);
+    rtcPeerConnection.addIceCandidate(candidate);
   });
 });
 const PORT = process.env.PORT || 3000;
