@@ -7,7 +7,6 @@ app.use(express.static('public'));
 
 io.on('connection', (socket) => {
   console.log('User connected: ' + socket.id);
-
   socket.on('join-room', (roomId) => {
     const roomClients = io.sockets.adapter.rooms.get(roomId) || new Set();
     const numberOfClients = roomClients.size;
