@@ -35,13 +35,17 @@
 
     let remoteId;
 
-    socket.on('offer', async (data) => {
-      remoteId = data.sender;
-      const desc = new RTCSessionDescription(data.sdp);
-      await rtcPeerConnection.setRemoteDescription(desc);
-      const answer = await rtcPeerConnection.createAnswer();
-      await rtcPeerConnection.setLocalDescription(answer);
-      socket.emit('answer', { sdp: rtcPeerConnection.localDescription, target: data.sender });
+    socket.on('room_created', async () => {
+      console.log('Room created, waiting for another user to join');
+      remoteId = roomId;
+    });
+
+    socket.on('room_joined', async () => {
+      console.log('Another user joined, creating and sending offer');
+      remoteId = roomId;
+      const offer = await rtcPeerConnection.createOffer();
+      await rtcPeerConnection.setLocalDescription(offer);
+      socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: roomId });
     });
 
     socket.on('answer', async (data) => {
@@ -52,18 +56,6 @@
     socket.on('icecandidate', (data) => {
       const candidate = new RTCIceCandidate(data.candidate);
       rtcPeerConnection.addIceCandidate(candidate);
-    });
-
-    socket.on('room_created', async () => {
-      console.log('Room created, waiting for another user to join');
-    });
-
-    socket.on('room_joined', async () => {
-      console.log('Another user joined, creating and sending offer');
-      remoteId = roomId;
-      const offer = await rtcPeerConnection.createOffer();
-      await rtcPeerConnection.setLocalDescription(offer);
-      socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: roomId });
     });
 
     socket.emit('join-room', roomId);
