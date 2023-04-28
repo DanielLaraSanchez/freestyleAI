@@ -29,11 +29,14 @@
 
     rtcPeerConnection.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit('icecandidate', { candidate: event.candidate, target: data.sender });
+        socket.emit('icecandidate', { candidate: event.candidate, target: remoteId });
       }
     };
 
+    let remoteId;
+
     socket.on('offer', async (data) => {
+      remoteId = data.sender;
       const desc = new RTCSessionDescription(data.sdp);
       await rtcPeerConnection.setRemoteDescription(desc);
       const answer = await rtcPeerConnection.createAnswer();
@@ -57,6 +60,7 @@
 
     socket.on('room_joined', async () => {
       console.log('Another user joined, creating and sending offer');
+      remoteId = roomId;
       const offer = await rtcPeerConnection.createOffer();
       await rtcPeerConnection.setLocalDescription(offer);
       socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: roomId });
