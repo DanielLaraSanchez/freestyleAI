@@ -35,12 +35,12 @@
 
     let remoteId;
 
-    socket.on('room_created', async () => {
+ socket.on('room_created_client', async () => {
       console.log('Room created, waiting for another user to join');
       remoteId = roomId;
     });
 
-    socket.on('room_joined', async () => {
+    socket.on('room_joined_client', async () => {
       console.log('Another user joined, creating and sending offer');
       remoteId = roomId;
       const offer = await rtcPeerConnection.createOffer();

@@ -14,12 +14,12 @@ io.on('connection', (socket) => {
     if (numberOfClients === 0) {
       console.log(`Creating room ${roomId} and emitting room_created`);
       socket.join(roomId);
-      socket.emit('room_created', roomId);
+      socket.emit('room_created_server', roomId);
       socket.remoteId = roomId;
     } else if (numberOfClients === 1) {
       console.log(`Joining room ${roomId} and emitting room_joined`);
       socket.join(roomId);
-      socket.emit('room_joined', roomId);
+      socket.emit('room_joined_server', roomId);
       socket.remoteId = roomId;
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
