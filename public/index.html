@@ -41,11 +41,11 @@
   console.log('remoteId after room_created_client:', remoteId);
 });
 
-socket.on('room_joined_client', async () => {
+socket.on('room_joined_client', async (room) => {
   console.log('Another user joined, creating and sending offer');
 
   // Set remoteId based on the room information
-  remoteId = socket.id === rooms[roomId].creator ? rooms[roomId].joiner : rooms[roomId].creator;
+  remoteId = socket.id === room.creator ? room.joiner : room.creator;
 
   const offer = await rtcPeerConnection.createOffer();
   await rtcPeerConnection.setLocalDescription(offer);

@@ -22,7 +22,7 @@ io.on("connection", (socket) => {
       rooms[roomId].joiner = socket.id;
   
       // Emit room_joined_server to both clients in the room
-      io.in(roomId).emit('room_joined_server', roomId);
+      io.in(roomId).emit('room_joined_client', rooms[roomId]);
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
       socket.emit('room_full', roomId);
