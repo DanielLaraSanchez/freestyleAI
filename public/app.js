@@ -4,6 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoContainer = document.getElementById("modal-video-container");
   const modal = document.getElementById("modal");
   const closeModal = document.getElementById("close-modal");
+  let setRemoteDescriptionPromise;
+  let receiveOfferPromise;
+  let createOfferPromise;
 
   let opponentSocketId = null;
 
@@ -36,6 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data;
+    isInitiator = true;
     initiateWebRTCConnection();
   });
 
@@ -91,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function initiateWebRTCConnection() {
-    peerConnection
+    createOfferPromise = peerConnection
       .createOffer()
       .then((offer) => {
         return peerConnection.setLocalDescription(offer);
@@ -103,13 +107,15 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Error creating offer:", error);
       });
   }
-
   socket.on("receiveOffer", async (data) => {
     try {
       await peerConnection.setRemoteDescription(data.offer);
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
       socket.emit("sendAnswer", { answer: peerConnection.localDescription, to: data.from });
+  
+      // Set the promise after setting the remote description
+      receiveOfferPromise = Promise.resolve();
     } catch (error) {
       console.error("Error handling receiveOffer:", error);
     }
@@ -117,13 +123,27 @@ document.addEventListener("DOMContentLoaded", () => {
   
   socket.on("receiveAnswer", async (data) => {
     try {
-      const answer = new RTCSessionDescription(data.answer);
-      await peerConnection.setRemoteDescription(answer);
+      // If the socket is not the initiator, it should not set the remote description for the received answer
+      if (!isInitiator) {
+        if (receiveOfferPromise) {
+          await receiveOfferPromise;
+        }
+  
+        if (createOfferPromise) {
+          await createOfferPromise;
+        }
+  
+        if (peerConnection.signalingState === "have-remote-offer") {
+          const answer = new RTCSessionDescription(data.answer);
+          await peerConnection.setRemoteDescription(answer);
+        } else {
+          console.warn("Unexpected signaling state for received answer:", peerConnection.signalingState);
+        }
+      }
     } catch (error) {
       console.error("Error setting remote description:", error);
     }
   });
-
   function startTimer() {
     setTimeout(() => {
       if (localVideo.srcObject) {
