@@ -5,12 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const videoContainer = document.getElementById("modal-video-container");
   const modal = document.getElementById("modal");
   const closeModal = document.getElementById("close-modal");
-  let setRemoteDescriptionPromise;
-  let receiveOfferPromise;
-  let createOfferPromise;
-  const iceCandidateQueue = [];
-  let offerInProgress = false;
-
 
   let opponentSocketId = null;
 
@@ -36,26 +30,11 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("connect", () => {
     console.log("Connected to server");
   });
-  socket.on("startRapBattleInitiator", () => {
-    isInitiator = true;
-    initiateWebRTCConnection();
-    startTimer();
-  });
-
-  socket.on("startRapBattleNonInitiator", () => {
-    isInitiator = false;
-    startTimer();
-  });
-  socket.on("disconnect", () => {
-    console.log("Disconnected from server");
-  });
 
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
-    if (isInitiator) {
-      initiateWebRTCConnection();
-    }
+    initiateWebRTCConnection(isInitiator);
   });
 
   // WebRTC logic
@@ -109,102 +88,38 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("receiveIceCandidate", async (data) => {
     const candidate = new RTCIceCandidate(data.candidate);
-
-    if (
-      peerConnection.remoteDescription &&
-      peerConnection.remoteDescription.type
-    ) {
-      try {
-        await peerConnection.addIceCandidate(candidate);
-      } catch (error) {
-        console.error("Error adding received ice candidate:", error);
-      }
-    } else {
-      iceCandidateQueue.push(candidate);
-    }
+    await peerConnection.addIceCandidate(candidate);
   });
 
-  function initiateWebRTCConnection() {
-    if (offerInProgress) return;
-    offerInProgress = true;
-  
-    createOfferPromise = peerConnection
-      .createOffer()
-      .then((offer) => {
-        return peerConnection.setLocalDescription(offer);
-      })
-      .then(() => {
-        socket.emit("sendOffer", {
-          offer: peerConnection.localDescription,
-          to: opponentSocketId,
+  function initiateWebRTCConnection(createOffer) {
+    if (createOffer) {
+      peerConnection
+        .createOffer()
+        .then((offer) => {
+          return peerConnection.setLocalDescription(offer);
+        })
+        .then(() => {
+          socket.emit("sendOffer", {
+            offer: peerConnection.localDescription,
+            to: opponentSocketId,
+          });
+        })
+        .catch((error) => {
+          console.error("Error creating offer:", error);
         });
-      })
-      .catch((error) => {
-        console.error("Error creating offer:", error);
-      })
-      .finally(() => {
-        offerInProgress = false;
-      });
+    }
   }
+
   socket.on("receiveOffer", async (data) => {
-    if (peerConnection.signalingState !== "stable") {
-      console.warn("Unexpected signaling state for received offer:", peerConnection.signalingState);
-      return;
-    }
-
-    try {
-      await peerConnection.setRemoteDescription(data.offer);
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      socket.emit("sendAnswer", { answer: peerConnection.localDescription, to: data.from });
-
-      receiveOfferPromise = Promise.resolve();
-    } catch (error) {
-      console.error("Error handling receiveOffer:", error);
-    }
+    await peerConnection.setRemoteDescription(data.offer);
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit("sendAnswer", { answer: peerConnection.localDescription, to: data.from });
   });
 
   socket.on("receiveAnswer", async (data) => {
-    if (!isInitiator) {
-      if (receiveOfferPromise) {
-        await receiveOfferPromise;
-      }
-
-      if (createOfferPromise) {
-        await createOfferPromise;
-      }
-
-      if (peerConnection.signalingState === "have-remote-offer") {
-        const answer = new RTCSessionDescription(data.answer);
-        await peerConnection.setRemoteDescription(answer);
-
-        // Process the iceCandidateQueue
-        while (iceCandidateQueue.length) {
-          const candidate = iceCandidateQueue.shift();
-          await peerConnection.addIceCandidate(candidate);
-        }
-      } else {
-        console.warn(
-          "Unexpected signaling state for received answer:",
-          peerConnection.signalingState
-        );
-      }
-    }
+    await peerConnection.setRemoteDescription(data.answer);
   });
-
-  function startTimer() {
-    setTimeout(() => {
-      if (localVideo.srcObject) {
-        localVideo.srcObject.getTracks().forEach((track) => track.stop());
-        localVideo.srcObject = null;
-      }
-      if (remoteVideo.srcObject) {
-        remoteVideo.srcObject.getTracks().forEach((track) => track.stop());
-        remoteVideo.srcObject = null;
-      }
-      socket.emit("endRapBattle", opponentSocketId);
-    }, 60000);
-  }
 
   socket.on("endRapBattle", () => {
     if (localVideo.srcObject) {
