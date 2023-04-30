@@ -2,7 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let isInitiator = false;
   const socket = io();
   const fightBtn = document.getElementById("fight-btn");
-  const videoContainer = document.getElementById("modal-video-container");
+  const localVideoContainer = document.querySelector(".local-video-container");
+  const remoteVideoContainer = document.querySelector(".remote-video-container");
   const modal = document.getElementById("modal");
   const closeModal = document.getElementById("close-modal");
 
@@ -35,6 +36,10 @@ document.addEventListener("DOMContentLoaded", () => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
     initiateWebRTCConnection(isInitiator);
+
+    if (isInitiator) {
+      startCountdown(10); // Start the countdown for 10 seconds
+    }
   });
 
   // WebRTC logic
@@ -43,8 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const remoteVideo = document.createElement("video");
   localVideo.classList.add("local-video");
   remoteVideo.classList.add("remote-video");
-  videoContainer.appendChild(localVideo);
-  videoContainer.appendChild(remoteVideo);
+  localVideoContainer.appendChild(localVideo);
+  remoteVideoContainer.appendChild(remoteVideo);
   localVideo.muted = true;
 
   const configuration = {
@@ -64,7 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
           "stun:stun.voiparound.com",
           "stun:stun.voipbuster.com",
           "stun:stun.voipstunt.com",
-          "stun:stun.voxgratia.org"          
+          "stun:stun.voxgratia.org"
         ],
       },
     ],
@@ -106,6 +111,25 @@ document.addEventListener("DOMContentLoaded", () => {
     await peerConnection.addIceCandidate(candidate);
   });
 
+  function initiateWebRTCConnection(createOffer) {
+    if (createOffer) {
+      peerConnection
+        .createOffer()
+        .then((offer) => {
+          return peerConnection.setLocalDescription(offer);
+        })
+        .then(() => {
+          socket.emit("sendOffer", {
+            offer: peerConnection.localDescription,
+            to: opponentSocketId,
+          });
+        })
+        .catch((error) => {
+          console.error("Error creating offer:", error);
+        });
+    }
+  }
+
   socket.on("receiveOffer", async (data) => {
     await peerConnection.setRemoteDescription(data.offer);
     const answer = await peerConnection.createAnswer();
@@ -130,34 +154,16 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.style.display = "none";
   });
 
-  function initiateWebRTCConnection(createOffer) {
-    if (createOffer) {
-      peerConnection
-        .createOffer()
-        .then((offer) => {
-          return peerConnection.setLocalDescription(offer);
-        })
-        .then(() => {
-          socket.emit("sendOffer", {
-            offer: peerConnection.localDescription,
-            to: opponentSocketId,
-          });
-        })
-        .catch((error) => {
-          console.error("Error creating offer:", error);
-        });
-    }
-  }
   function startCountdown(duration) {
     const countdownElement = document.getElementById("countdown");
     let remainingTime = duration;
-  
+
     countdownElement.textContent = remainingTime;
-  
+
     const countdownInterval = setInterval(() => {
       remainingTime--;
       countdownElement.textContent = remainingTime;
-  
+
       if (remainingTime <= 0) {
         clearInterval(countdownInterval);
         countdownElement.textContent = ""; // Clear the countdown text
