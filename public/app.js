@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let setRemoteDescriptionPromise;
   let receiveOfferPromise;
   let createOfferPromise;
+  const iceCandidateQueue = [];
 
   let opponentSocketId = null;
 
@@ -32,7 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("connect", () => {
     console.log("Connected to server");
   });
-
+  socket.on("startRapBattle", () => {
+    initiateWebRTCConnection();
+  });
   socket.on("disconnect", () => {
     console.log("Disconnected from server");
   });
@@ -40,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data;
     isInitiator = true;
-    initiateWebRTCConnection();
+    socket.emit("startRapBattle");
   });
 
   // WebRTC logic
@@ -67,7 +70,9 @@ document.addEventListener("DOMContentLoaded", () => {
     .then((stream) => {
       localVideo.srcObject = stream;
       localVideo.play();
-      stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+      stream
+        .getTracks()
+        .forEach((track) => peerConnection.addTrack(track, stream));
     })
     .catch((error) => {
       console.error("Error accessing media devices.", error);
@@ -83,15 +88,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
   peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
-      socket.emit("sendIceCandidate", { candidate: event.candidate, to: opponentSocketId });
+      socket.emit("sendIceCandidate", {
+        candidate: event.candidate,
+        to: opponentSocketId,
+      });
     }
   };
 
-  socket.on("receiveIceCandidate", (data) => {
+  socket.on("receiveIceCandidate", async (data) => {
     const candidate = new RTCIceCandidate(data.candidate);
-    peerConnection.addIceCandidate(candidate).catch((error) => {
-      console.error("Error adding received ice candidate:", error);
-    });
+
+    if (
+      peerConnection.remoteDescription &&
+      peerConnection.remoteDescription.type
+    ) {
+      try {
+        await peerConnection.addIceCandidate(candidate);
+      } catch (error) {
+        console.error("Error adding received ice candidate:", error);
+      }
+    } else {
+      iceCandidateQueue.push(candidate);
+    }
   });
 
   function initiateWebRTCConnection() {
@@ -101,7 +119,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return peerConnection.setLocalDescription(offer);
       })
       .then(() => {
-        socket.emit("sendOffer", { offer: peerConnection.localDescription, to: opponentSocketId });
+        socket.emit("sendOffer", {
+          offer: peerConnection.localDescription,
+          to: opponentSocketId,
+        });
       })
       .catch((error) => {
         console.error("Error creating offer:", error);
@@ -112,38 +133,46 @@ document.addEventListener("DOMContentLoaded", () => {
       await peerConnection.setRemoteDescription(data.offer);
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
-      socket.emit("sendAnswer", { answer: peerConnection.localDescription, to: data.from });
-  
+      socket.emit("sendAnswer", {
+        answer: peerConnection.localDescription,
+        to: data.from,
+      });
+
       // Set the promise after setting the remote description
       receiveOfferPromise = Promise.resolve();
     } catch (error) {
       console.error("Error handling receiveOffer:", error);
     }
   });
-  
+
   socket.on("receiveAnswer", async (data) => {
-    try {
-      // If the socket is not the initiator, it should not set the remote description for the received answer
-      if (!isInitiator) {
-        if (receiveOfferPromise) {
-          await receiveOfferPromise;
-        }
-  
-        if (createOfferPromise) {
-          await createOfferPromise;
-        }
-  
-        if (peerConnection.signalingState === "have-remote-offer") {
-          const answer = new RTCSessionDescription(data.answer);
-          await peerConnection.setRemoteDescription(answer);
-        } else {
-          console.warn("Unexpected signaling state for received answer:", peerConnection.signalingState);
-        }
+    if (!isInitiator) {
+      if (receiveOfferPromise) {
+        await receiveOfferPromise;
       }
-    } catch (error) {
-      console.error("Error setting remote description:", error);
+
+      if (createOfferPromise) {
+        await createOfferPromise;
+      }
+
+      if (peerConnection.signalingState === "have-remote-offer") {
+        const answer = new RTCSessionDescription(data.answer);
+        await peerConnection.setRemoteDescription(answer);
+
+        // Process the iceCandidateQueue
+        while (iceCandidateQueue.length) {
+          const candidate = iceCandidateQueue.shift();
+          await peerConnection.addIceCandidate(candidate);
+        }
+      } else {
+        console.warn(
+          "Unexpected signaling state for received answer:",
+          peerConnection.signalingState
+        );
+      }
     }
   });
+
   function startTimer() {
     setTimeout(() => {
       if (localVideo.srcObject) {

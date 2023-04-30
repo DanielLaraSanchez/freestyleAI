@@ -24,6 +24,8 @@ io.on("connection", (socket) => {
       socket.join(roomId);
       rooms[roomId].joiner = socket.id;
       io.in(roomId).emit("room_joined_client");
+      socket.emit("startRapBattle"); // Add this line
+
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
       socket.emit("room_full", roomId);
