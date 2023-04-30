@@ -16,12 +16,13 @@ io.on("connection", (socket) => {
       console.log(`Creating room ${roomId}`);
       socket.join(roomId);
       rooms[roomId] = { creator: socket.id };
+      socket.emit('room_created_client');
     } else if (numberOfClients === 1) {
       console.log(`Joining room ${roomId}`);
       socket.join(roomId);
       rooms[roomId].joiner = socket.id;
   
-      // Emit room_joined_server to both clients in the room
+      // Emit room_joined_client to both clients in the room
       io.in(roomId).emit('room_joined_client', rooms[roomId]);
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
@@ -33,28 +34,28 @@ io.on("connection", (socket) => {
     console.log("User disconnected: " + socket.id);
   });
 
-  socket.on('offer', async (data) => {
+  // Handle the offer event on the server-side
+  socket.on('offer', (data) => {
     console.log('Offer received:', data);
-    remoteId = data.sender;
-    const desc = new RTCSessionDescription(data.sdp);
-    await rtcPeerConnection.setRemoteDescription(desc);
-    const answer = await rtcPeerConnection.createAnswer();
-    await rtcPeerConnection.setLocalDescription(answer);
-    socket.emit('answer', { sdp: rtcPeerConnection.localDescription, target: data.sender });
+    // Forward the offer to the target client
+    socket.to(data.target).emit('offer', data);
   });
-  
-  socket.on('answer', async (data) => {
+
+  // Handle the answer event on the server-side
+  socket.on('answer', (data) => {
     console.log('Answer received:', data);
-    const desc = new RTCSessionDescription(data.sdp);
-    await rtcPeerConnection.setRemoteDescription(desc);
+    // Forward the answer to the target client
+    socket.to(data.target).emit('answer', data);
   });
-  
+
+  // Handle the icecandidate event on the server-side
   socket.on('icecandidate', (data) => {
-    console.log('ICE candidate received:', data);
-    const candidate = new RTCIceCandidate(data.candidate);
-    rtcPeerConnection.addIceCandidate(candidate);
+    console.log('Received ICE candidate:', data.candidate);
+    // Forward the icecandidate data to the target client
+    socket.to(data.target).emit('icecandidate', data);
   });
 });
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

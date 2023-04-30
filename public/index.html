@@ -16,6 +16,7 @@
     const remoteVideo = document.getElementById('remoteVideo');
     const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
     const rtcPeerConnection = new RTCPeerConnection(configuration);
+    const pendingCandidates = [];
 
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then((stream) => {
@@ -36,31 +37,59 @@
     let remoteId;
 
     socket.on('room_created_client', async () => {
-  console.log('Room created, waiting for another user to join');
-  remoteId = roomId;
-  console.log('remoteId after room_created_client:', remoteId);
-});
+      console.log('Room created, waiting for another user to join');
+      remoteId = roomId;
+      console.log('remoteId after room_created_client:', remoteId);
+    });
 
-socket.on('room_joined_client', async (room) => {
-  console.log('Another user joined, creating and sending offer');
+    socket.on('room_joined_client', async (room) => {
+      console.log('Another user joined, creating and sending offer');
 
-  // Set remoteId based on the room information
-  remoteId = socket.id === room.creator ? room.joiner : room.creator;
+      remoteId = socket.id === room.creator ? room.joiner : room.creator;
 
-  const offer = await rtcPeerConnection.createOffer();
-  await rtcPeerConnection.setLocalDescription(offer);
-  socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: remoteId });
-});
+      const offer = await rtcPeerConnection.createOffer();
+      await rtcPeerConnection.setLocalDescription(offer);
+      socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: remoteId });
+    });
 
+    socket.on('offer', async (data) => {
+      const desc = new RTCSessionDescription(data.sdp);
+      await rtcPeerConnection.setRemoteDescription(desc);
+      const answer = await rtcPeerConnection.createAnswer();
+      await rtcPeerConnection.setLocalDescription(answer);
+      socket.emit('answer', { sdp: rtcPeerConnection.localDescription, target: data.target });
+      
+      // Process pending ICE candidates once the remote description is set
+      pendingCandidates.forEach(async (candidate) => {
+        await rtcPeerConnection.addIceCandidate(candidate);
+      });
+      pendingCandidates.length = 0;
+    });
 
     socket.on('answer', async (data) => {
       const desc = new RTCSessionDescription(data.sdp);
       await rtcPeerConnection.setRemoteDescription(desc);
+
+      // Process pending ICE candidates once the remote description is set
+      pendingCandidates.forEach(async (candidate) => {
+        await rtcPeerConnection.addIceCandidate(candidate);
+      });
+      pendingCandidates.length = 0;
     });
 
-    socket.on('icecandidate', (data) => {
-      const candidate = new RTCIceCandidate(data.candidate);
-      rtcPeerConnection.addIceCandidate(candidate);
+    socket.on('icecandidate', async (data) => {
+      try {
+        const candidate = new RTCIceCandidate(data.candidate);
+
+        if (rtcPeerConnection.remoteDescription && rtcPeerConnection.remoteDescription.type) {
+          await rtcPeerConnection.addIceCandidate(candidate);
+        } else {
+          // If the remote description is not set yet, add the candidate to the pendingCandidates array
+          pendingCandidates.push(candidate);
+        }
+      } catch (error) {
+        console.error("Error adding ICE candidate:", error);
+      }
     });
 
     socket.emit('join-room', roomId);
