@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  let isInitiator = false;
   const socket = io();
   const fightBtn = document.getElementById("fight-btn");
   const videoContainer = document.getElementById("modal-video-container");
@@ -8,6 +9,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let receiveOfferPromise;
   let createOfferPromise;
   const iceCandidateQueue = [];
+  let offerInProgress = false;
+
 
   let opponentSocketId = null;
 
@@ -33,17 +36,26 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("connect", () => {
     console.log("Connected to server");
   });
-  socket.on("startRapBattle", () => {
+  socket.on("startRapBattleInitiator", () => {
+    isInitiator = true;
     initiateWebRTCConnection();
+    startTimer();
+  });
+
+  socket.on("startRapBattleNonInitiator", () => {
+    isInitiator = false;
+    startTimer();
   });
   socket.on("disconnect", () => {
     console.log("Disconnected from server");
   });
 
   socket.on("foundOpponent", (data) => {
-    opponentSocketId = data;
-    isInitiator = true;
-    socket.emit("startRapBattle");
+    opponentSocketId = data.socketId;
+    isInitiator = data.isInitiator;
+    if (isInitiator) {
+      initiateWebRTCConnection();
+    }
   });
 
   // WebRTC logic
@@ -69,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       localVideo.srcObject = stream;
-      localVideo.play();
+      localVideo.play().catch((error) => console.warn("Error playing local video:", error));
       stream
         .getTracks()
         .forEach((track) => peerConnection.addTrack(track, stream));
@@ -82,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const stream = event.streams[0];
     if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
       remoteVideo.srcObject = stream;
-      remoteVideo.play();
+      remoteVideo.play().catch((error) => console.warn("Error playing remote video:", error));
     }
   };
 
@@ -113,6 +125,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function initiateWebRTCConnection() {
+    if (offerInProgress) return;
+    offerInProgress = true;
+  
     createOfferPromise = peerConnection
       .createOffer()
       .then((offer) => {
@@ -126,19 +141,23 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .catch((error) => {
         console.error("Error creating offer:", error);
+      })
+      .finally(() => {
+        offerInProgress = false;
       });
   }
   socket.on("receiveOffer", async (data) => {
+    if (peerConnection.signalingState !== "stable") {
+      console.warn("Unexpected signaling state for received offer:", peerConnection.signalingState);
+      return;
+    }
+
     try {
       await peerConnection.setRemoteDescription(data.offer);
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
-      socket.emit("sendAnswer", {
-        answer: peerConnection.localDescription,
-        to: data.from,
-      });
+      socket.emit("sendAnswer", { answer: peerConnection.localDescription, to: data.from });
 
-      // Set the promise after setting the remote description
       receiveOfferPromise = Promise.resolve();
     } catch (error) {
       console.error("Error handling receiveOffer:", error);
@@ -186,10 +205,6 @@ document.addEventListener("DOMContentLoaded", () => {
       socket.emit("endRapBattle", opponentSocketId);
     }, 60000);
   }
-
-  socket.on("startRapBattle", () => {
-    startTimer();
-  });
 
   socket.on("endRapBattle", () => {
     if (localVideo.srcObject) {

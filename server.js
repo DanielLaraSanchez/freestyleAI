@@ -13,7 +13,7 @@ io.on("connection", (socket) => {
   socket.on("join-room", (roomId) => {
     const roomClients = io.sockets.adapter.rooms.get(roomId) || new Set();
     const numberOfClients = roomClients.size;
-
+  
     if (numberOfClients === 0) {
       console.log(`Creating room ${roomId}`);
       socket.join(roomId);
@@ -23,9 +23,6 @@ io.on("connection", (socket) => {
       console.log(`Joining room ${roomId}`);
       socket.join(roomId);
       rooms[roomId].joiner = socket.id;
-      io.in(roomId).emit("room_joined_client");
-      socket.emit("startRapBattle"); // Add this line
-
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
       socket.emit("room_full", roomId);
@@ -36,9 +33,10 @@ io.on("connection", (socket) => {
     if (waitingUsers.size > 0) {
       const opponentSocketId = getRandomOpponent(waitingUsers);
       waitingUsers.delete(opponentSocketId);
-      socket.emit("foundOpponent", opponentSocketId);
-      io.to(opponentSocketId).emit("foundOpponent", socket.id);
-      io.to(opponentSocketId).emit("startRapBattle");
+      socket.emit("foundOpponent", { socketId: opponentSocketId, isInitiator: true });
+      io.to(opponentSocketId).emit("foundOpponent", { socketId: socket.id, isInitiator: false });
+      io.to(socket.id).emit("startRapBattleInitiator");
+      io.to(opponentSocketId).emit("startRapBattleNonInitiator");
     } else {
       waitingUsers.add(socket.id);
     }
