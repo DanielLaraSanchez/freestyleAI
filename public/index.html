@@ -65,7 +65,11 @@
       // Process pending ICE candidates once the remote description is set
       await remoteDescriptionPromise;
       pendingCandidates.forEach(async (candidate) => {
-        await rtcPeerConnection.addIceCandidate(candidate);
+        try {
+          await rtcPeerConnection.addIceCandidate(candidate);
+        } catch (error) {
+          console.error("Error adding ICE candidate:", error);
+        }
       });
       pendingCandidates.length = 0;
     });
@@ -78,22 +82,22 @@
       // Process pending ICE candidates once the remote description is set
       await remoteDescriptionPromise;
       pendingCandidates.forEach(async (candidate) => {
-        await rtcPeerConnection.addIceCandidate(candidate);
+        try {
+          await rtcPeerConnection.addIceCandidate(candidate);
+        } catch (error) {
+          console.error("Error adding ICE candidate:", error);
+        }
       });
       pendingCandidates.length = 0;
     });
 
-    async function handleIceCandidate(candidate) {
-      if (remoteDescriptionPromise) {
-        await remoteDescriptionPromise;
-      }
-      await rtcPeerConnection.addIceCandidate(candidate);
-    }
-
     socket.on('icecandidate', async (data) => {
       try {
         const candidate = new RTCIceCandidate(data.candidate);
-        await handleIceCandidate(candidate);
+        if (remoteDescriptionPromise) {
+          await remoteDescriptionPromise;
+        }
+        await rtcPeerConnection.addIceCandidate(candidate);
       } catch (error) {
         console.error("Error adding ICE candidate:", error);
       }
