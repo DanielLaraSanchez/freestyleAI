@@ -17,6 +17,7 @@
     const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
     const rtcPeerConnection = new RTCPeerConnection(configuration);
     const pendingCandidates = [];
+    let isRemoteDescriptionSet = false;
 
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then((stream) => {
@@ -55,6 +56,8 @@
     socket.on('offer', async (data) => {
       const desc = new RTCSessionDescription(data.sdp);
       await rtcPeerConnection.setRemoteDescription(desc);
+      isRemoteDescriptionSet = true;
+      
       const answer = await rtcPeerConnection.createAnswer();
       await rtcPeerConnection.setLocalDescription(answer);
       socket.emit('answer', { sdp: rtcPeerConnection.localDescription, target: data.target });
@@ -69,6 +72,7 @@
     socket.on('answer', async (data) => {
       const desc = new RTCSessionDescription(data.sdp);
       await rtcPeerConnection.setRemoteDescription(desc);
+      isRemoteDescriptionSet = true;
 
       // Process pending ICE candidates once the remote description is set
       pendingCandidates.forEach(async (candidate) => {
@@ -81,7 +85,7 @@
       try {
         const candidate = new RTCIceCandidate(data.candidate);
 
-        if (rtcPeerConnection.remoteDescription && rtcPeerConnection.remoteDescription.type) {
+        if (isRemoteDescriptionSet) {
           await rtcPeerConnection.addIceCandidate(candidate);
         } else {
           // If the remote description is not set yet, add the candidate to the pendingCandidates array
