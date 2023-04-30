@@ -1,109 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebRTC Video Chat</title>
+  <title>P2P Rap Battle</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <video id="localVideo" autoplay muted></video>
-  <video id="remoteVideo" autoplay></video>
+  <div class="container">
+    <h1>P2P Rap Battle</h1>
+    <button id="fight-btn" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent">
+      Fight
+    </button>
+  </div>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span id="close-modal" class="close">&times;</span>
+      <div id="modal-video-container"></div>
+    </div>
+  </div>
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const roomId = 'test-room';
-    const socket = io();
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-    const rtcPeerConnection = new RTCPeerConnection(configuration);
-    const pendingCandidates = [];
-    let remoteDescriptionPromise = null;
-
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        localVideo.srcObject = stream;
-        stream.getTracks().forEach((track) => rtcPeerConnection.addTrack(track, stream));
-      });
-
-    rtcPeerConnection.ontrack = (event) => {
-      remoteVideo.srcObject = event.streams[0];
-    };
-
-    rtcPeerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit('icecandidate', { candidate: event.candidate, target: remoteId });
-      }
-    };
-
-    let remoteId;
-
-    socket.on('room_created_client', async () => {
-      console.log('Room created, waiting for another user to join');
-      remoteId = roomId;
-      console.log('remoteId after room_created_client:', remoteId);
-    });
-
-    socket.on('room_joined_client', async (room) => {
-      console.log('Another user joined, creating and sending offer');
-
-      remoteId = socket.id === room.creator ? room.joiner : room.creator;
-
-      const offer = await rtcPeerConnection.createOffer();
-      await rtcPeerConnection.setLocalDescription(offer);
-      socket.emit('offer', { sdp: rtcPeerConnection.localDescription, target: remoteId });
-    });
-
-    socket.on('offer', async (data) => {
-      const desc = new RTCSessionDescription(data.sdp);
-      
-      remoteDescriptionPromise = rtcPeerConnection.setRemoteDescription(desc);
-
-      const answer = await rtcPeerConnection.createAnswer();
-      await rtcPeerConnection.setLocalDescription(answer);
-      socket.emit('answer', { sdp: rtcPeerConnection.localDescription, target: data.target });
-      
-      // Process pending ICE candidates once the remote description is set
-      await remoteDescriptionPromise;
-      pendingCandidates.forEach(async (candidate) => {
-        try {
-          await rtcPeerConnection.addIceCandidate(candidate);
-        } catch (error) {
-          console.error("Error adding ICE candidate:", error);
-        }
-      });
-      pendingCandidates.length = 0;
-    });
-
-    socket.on('answer', async (data) => {
-      const desc = new RTCSessionDescription(data.sdp);
-
-      remoteDescriptionPromise = rtcPeerConnection.setRemoteDescription(desc);
-
-      // Process pending ICE candidates once the remote description is set
-      await remoteDescriptionPromise;
-      pendingCandidates.forEach(async (candidate) => {
-        try {
-          await rtcPeerConnection.addIceCandidate(candidate);
-        } catch (error) {
-          console.error("Error adding ICE candidate:", error);
-        }
-      });
-      pendingCandidates.length = 0;
-    });
-
-    socket.on('icecandidate', async (data) => {
-      try {
-        const candidate = new RTCIceCandidate(data.candidate);
-        if (remoteDescriptionPromise) {
-          await remoteDescriptionPromise;
-        }
-        await rtcPeerConnection.addIceCandidate(candidate);
-      } catch (error) {
-        console.error("Error adding ICE candidate:", error);
-      }
-    });
-
-    socket.emit('join-room', roomId);
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/7.7.1/adapter.min.js"></script>
+  <script src="/app.js"></script>
 </body>
 </html>
