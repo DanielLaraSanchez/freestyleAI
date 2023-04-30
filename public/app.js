@@ -106,25 +106,6 @@ document.addEventListener("DOMContentLoaded", () => {
     await peerConnection.addIceCandidate(candidate);
   });
 
-  function initiateWebRTCConnection(createOffer) {
-    if (createOffer) {
-      peerConnection
-        .createOffer()
-        .then((offer) => {
-          return peerConnection.setLocalDescription(offer);
-        })
-        .then(() => {
-          socket.emit("sendOffer", {
-            offer: peerConnection.localDescription,
-            to: opponentSocketId,
-          });
-        })
-        .catch((error) => {
-          console.error("Error creating offer:", error);
-        });
-    }
-  }
-
   socket.on("receiveOffer", async (data) => {
     await peerConnection.setRemoteDescription(data.offer);
     const answer = await peerConnection.createAnswer();
@@ -148,4 +129,39 @@ document.addEventListener("DOMContentLoaded", () => {
     opponentSocketId = null;
     modal.style.display = "none";
   });
+
+  function initiateWebRTCConnection(createOffer) {
+    if (createOffer) {
+      peerConnection
+        .createOffer()
+        .then((offer) => {
+          return peerConnection.setLocalDescription(offer);
+        })
+        .then(() => {
+          socket.emit("sendOffer", {
+            offer: peerConnection.localDescription,
+            to: opponentSocketId,
+          });
+        })
+        .catch((error) => {
+          console.error("Error creating offer:", error);
+        });
+    }
+  }
+  function startCountdown(duration) {
+    const countdownElement = document.getElementById("countdown");
+    let remainingTime = duration;
+  
+    countdownElement.textContent = remainingTime;
+  
+    const countdownInterval = setInterval(() => {
+      remainingTime--;
+      countdownElement.textContent = remainingTime;
+  
+      if (remainingTime <= 0) {
+        clearInterval(countdownInterval);
+        countdownElement.textContent = ""; // Clear the countdown text
+      }
+    }, 1000);
+  }
 });
