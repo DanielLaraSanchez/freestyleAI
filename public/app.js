@@ -3,7 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const socket = io();
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
-  const remoteVideoContainer = document.querySelector(".remote-video-container");
+  const remoteVideoContainer = document.querySelector(
+    ".remote-video-container"
+  );
   const modal = document.getElementById("modal");
   const closeModal = document.getElementById("close-modal");
 
@@ -40,6 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isInitiator) {
       startCountdown(10); // Start the countdown for 10 seconds
     }
+
+    socket.on("userDisconnected", (disconnectedSocketId) => {
+      if (opponentSocketId === disconnectedSocketId) {
+        endRapBattle();
+      }
+    });
   });
 
   // WebRTC logic
@@ -50,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
   remoteVideo.classList.add("remote-video");
   localVideoContainer.appendChild(localVideo);
   remoteVideoContainer.appendChild(remoteVideo);
-  localVideo.muted = true;
+  localVideo.muted = false;
 
   const configuration = {
     iceServers: [
@@ -69,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
           "stun:stun.voiparound.com",
           "stun:stun.voipbuster.com",
           "stun:stun.voipstunt.com",
-          "stun:stun.voxgratia.org"
+          "stun:stun.voxgratia.org",
         ],
       },
     ],
@@ -80,7 +88,9 @@ document.addEventListener("DOMContentLoaded", () => {
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       localVideo.srcObject = stream;
-      localVideo.play().catch((error) => console.warn("Error playing local video:", error));
+      localVideo
+        .play()
+        .catch((error) => console.warn("Error playing local video:", error));
       stream
         .getTracks()
         .forEach((track) => peerConnection.addTrack(track, stream));
@@ -93,7 +103,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const stream = event.streams[0];
     if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
       remoteVideo.srcObject = stream;
-      remoteVideo.play().catch((error) => console.warn("Error playing remote video:", error));
+      remoteVideo
+        .play()
+        .catch((error) => console.warn("Error playing remote video:", error));
     }
   };
 
@@ -110,6 +122,49 @@ document.addEventListener("DOMContentLoaded", () => {
     const candidate = new RTCIceCandidate(data.candidate);
     await peerConnection.addIceCandidate(candidate);
   });
+
+  socket.on("updateUserList", (users) => {
+    const usersList = document.getElementById("users-list");
+
+    // Clear the existing list
+    usersList.innerHTML = "";
+
+    // Add each user to the list
+    users.forEach((user) => {
+      const listItem = document.createElement("li");
+      listItem.classList.add("user-item");
+
+      const avatarWrapper = document.createElement("div");
+      const avatar = document.createElement("i");
+      avatar.classList.add("material-icons");
+      avatar.textContent = "face"; // Change the icon here
+      avatarWrapper.appendChild(avatar);
+      listItem.appendChild(avatarWrapper);
+
+      const userNameWrapper = document.createElement("div");
+      const userName = document.createElement("span");
+      userName.textContent = user === socket.id ? "YOU" : user;
+      userNameWrapper.appendChild(userName);
+      listItem.appendChild(userNameWrapper);
+
+      usersList.appendChild(listItem);
+    });
+  });
+  function endRapBattle() {
+    // Remove event listener for "userDisconnected"
+    socket.off("userDisconnected");
+
+    if (localVideo.srcObject) {
+      localVideo.srcObject.getTracks().forEach((track) => track.stop());
+      localVideo.srcObject = null;
+    }
+    if (remoteVideo.srcObject) {
+      remoteVideo.srcObject.getTracks().forEach((track) => track.stop());
+      remoteVideo.srcObject = null;
+    }
+    opponentSocketId = null;
+    modal.style.display = "none";
+  }
 
   function initiateWebRTCConnection(createOffer) {
     if (createOffer) {
@@ -134,7 +189,10 @@ document.addEventListener("DOMContentLoaded", () => {
     await peerConnection.setRemoteDescription(data.offer);
     const answer = await peerConnection.createAnswer();
     await peerConnection.setLocalDescription(answer);
-    socket.emit("sendAnswer", { answer: peerConnection.localDescription, to: data.from });
+    socket.emit("sendAnswer", {
+      answer: peerConnection.localDescription,
+      to: data.from,
+    });
   });
 
   socket.on("receiveAnswer", async (data) => {
@@ -158,15 +216,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const countdownElement = document.getElementById("countdown");
     let remainingTime = duration;
 
-    countdownElement.textContent = remainingTime;
+    const updateCountdown = () => {
+      countdownElement.textContent = remainingTime;
+      countdownElement.classList.remove("countdown-animation");
+      void countdownElement.offsetWidth; // Trigger reflow
+      countdownElement.classList.add("countdown-animation");
+    };
+
+    updateCountdown();
 
     const countdownInterval = setInterval(() => {
       remainingTime--;
-      countdownElement.textContent = remainingTime;
 
       if (remainingTime <= 0) {
         clearInterval(countdownInterval);
         countdownElement.textContent = ""; // Clear the countdown text
+      } else {
+        updateCountdown();
       }
     }, 1000);
   }

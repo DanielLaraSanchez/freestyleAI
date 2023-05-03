@@ -4,11 +4,14 @@ const server = require("http").Server(app);
 const io = require("socket.io")(server);
 const rooms = {};
 const waitingUsers = new Set();
+const users = [];
 
 app.use(express.static("public"));
 
 io.on("connection", (socket) => {
   console.log("User connected: " + socket.id);
+  users.push(socket.id);
+  io.emit("updateUserList", users);
 
   socket.on("join-room", (roomId) => {
     const roomClients = io.sockets.adapter.rooms.get(roomId) || new Set();
@@ -64,9 +67,18 @@ io.on("connection", (socket) => {
     io.to(opponentId).emit("endRapBattle");
   });
 
+  
   socket.on("disconnect", () => {
+    const index = users.indexOf(socket.id);
+    if (index > -1) {
+      users.splice(index, 1);
+    }
     console.log("User disconnected:", socket.id);
     waitingUsers.delete(socket.id);
+    io.emit("updateUserList", users);
+  
+    // Add this line to emit "userDisconnected" event to all connected clients
+    io.emit("userDisconnected", socket.id);
   });
 
   function getRandomOpponent(users) {
