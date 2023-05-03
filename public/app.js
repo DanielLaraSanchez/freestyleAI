@@ -58,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
   remoteVideo.classList.add("remote-video");
   localVideoContainer.appendChild(localVideo);
   remoteVideoContainer.appendChild(remoteVideo);
-  localVideo.muted = false;
 
   const configuration = {
     iceServers: [
@@ -88,9 +87,10 @@ document.addEventListener("DOMContentLoaded", () => {
     .getUserMedia({ video: true, audio: true })
     .then((stream) => {
       localVideo.srcObject = stream;
-      localVideo
-        .play()
-        .catch((error) => console.warn("Error playing local video:", error));
+      localVideo.onloadedmetadata = () => {
+        localVideo.muted = false;
+        localVideo.play();
+      };
       stream
         .getTracks()
         .forEach((track) => peerConnection.addTrack(track, stream));
@@ -103,9 +103,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const stream = event.streams[0];
     if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
       remoteVideo.srcObject = stream;
-      remoteVideo
-        .play()
-        .catch((error) => console.warn("Error playing remote video:", error));
+      remoteVideo.onloadedmetadata = () => {
+        remoteVideo.muted = false;
+        remoteVideo.play();
+      };
     }
   };
 
