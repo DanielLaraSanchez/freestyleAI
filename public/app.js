@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     ],
   };
-  const peerConnection = new RTCPeerConnection(configuration);
+  let peerConnection = new RTCPeerConnection(configuration);
 
   function startCamera() {
     // Create a new RTCPeerConnection
