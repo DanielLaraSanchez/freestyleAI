@@ -40,11 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
     initiateWebRTCConnection(isInitiator);
-
+  
     if (isInitiator) {
       startCountdown(10); // Start the countdown for 10 seconds
     }
-
+  
+    // Add this line to reset the `isInitiator` flag after the connection
+    socket.once("endRapBattle", () => {
+      isInitiator = false;
+    });
+  
     socket.on("userDisconnected", (disconnectedSocketId) => {
       if (opponentSocketId === disconnectedSocketId) {
         endRapBattle();

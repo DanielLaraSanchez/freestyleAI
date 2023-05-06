@@ -77,7 +77,16 @@ io.on("connection", (socket) => {
     waitingUsers.delete(socket.id);
     io.emit("updateUserList", users);
   
-    // Add this line to emit "userDisconnected" event to all connected clients
+    // Add this line to emit "endRapBattle" event to the opponent when a user disconnects
+    const opponentSocketId = Object.values(rooms).find(
+      (room) =>
+        room.creator === socket.id || room.joiner === socket.id
+    );
+    if (opponentSocketId) {
+      io.to(opponentSocketId).emit("endRapBattle");
+    }
+  
+    // Emit "userDisconnected" event to all connected clients
     io.emit("userDisconnected", socket.id);
   });
 
