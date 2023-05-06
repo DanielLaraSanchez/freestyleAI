@@ -15,18 +15,23 @@ document.addEventListener("DOMContentLoaded", () => {
     fightBtn.addEventListener("click", () => {
       modal.style.display = "block";
       socket.emit("requestOpponent");
+
+      // Start the camera when the fight button is clicked
+      startCamera();
     });
   }
 
   if (closeModal) {
     closeModal.addEventListener("click", () => {
       modal.style.display = "none";
+      endRapBattle(); // Stop the camera when the modal is closed
     });
   }
 
   window.addEventListener("click", (event) => {
     if (event.target === modal) {
       modal.style.display = "none";
+      endRapBattle(); // Stop the camera when the modal is closed
     }
   });
 
@@ -84,20 +89,22 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const peerConnection = new RTCPeerConnection(configuration);
 
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      localVideo.srcObject = stream;
-      localVideo
-        .play()
-        .catch((error) => console.warn("Error playing local video:", error));
-      stream
-        .getTracks()
-        .forEach((track) => peerConnection.addTrack(track, stream));
-    })
-    .catch((error) => {
-      console.error("Error accessing media devices.", error);
-    });
+  function startCamera() {
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        localVideo.srcObject = stream;
+        localVideo
+          .play()
+          .catch((error) => console.warn("Error playing local video:", error));
+        stream
+          .getTracks()
+          .forEach((track) => peerConnection.addTrack(track, stream));
+      })
+      .catch((error) => {
+        console.error("Error accessing media devices.", error);
+      });
+  }
 
   peerConnection.ontrack = (event) => {
     const stream = event.streams[0];
@@ -150,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
       usersList.appendChild(listItem);
     });
   });
+
   function endRapBattle() {
     // Remove event listener for "userDisconnected"
     socket.off("userDisconnected");
