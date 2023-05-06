@@ -90,6 +90,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const peerConnection = new RTCPeerConnection(configuration);
 
   function startCamera() {
+    // Create a new RTCPeerConnection
+    peerConnection = new RTCPeerConnection(configuration);
+    setupPeerConnection();
+  
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
@@ -105,12 +109,11 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Error accessing media devices.", error);
       });
   }
-
-  peerConnection.ontrack = (event) => {
+  peerConnection.ontrack = async (event) => {
     const stream = event.streams[0];
     if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
       remoteVideo.srcObject = stream;
-      remoteVideo
+      await remoteVideo
         .play()
         .catch((error) => console.warn("Error playing remote video:", error));
     }
@@ -161,7 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function endRapBattle() {
     // Remove event listener for "userDisconnected"
     socket.off("userDisconnected");
-
+  
     if (localVideo.srcObject) {
       localVideo.srcObject.getTracks().forEach((track) => track.stop());
       localVideo.srcObject = null;
@@ -172,39 +175,65 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     opponentSocketId = null;
     modal.style.display = "none";
+  
+    // Close the existing RTCPeerConnection
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
   }
-
-  function initiateWebRTCConnection(createOffer) {
+  async function initiateWebRTCConnection(createOffer) {
     if (createOffer) {
-      peerConnection
-        .createOffer()
-        .then((offer) => {
-          return peerConnection.setLocalDescription(offer);
-        })
-        .then(() => {
-          socket.emit("sendOffer", {
-            offer: peerConnection.localDescription,
-            to: opponentSocketId,
-          });
-        })
-        .catch((error) => {
-          console.error("Error creating offer:", error);
+      try {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+  
+        socket.emit("sendOffer", {
+          offer: peerConnection.localDescription,
+          to: opponentSocketId,
         });
+      } catch (error) {
+        console.error("Error creating offer:", error);
+      }
+    } else {
+      // Remove the following line as it's not needed
+      // await peerConnection.setRemoteDescription(data.offer);
+  
+      try {
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+  
+        // Move the socket.emit inside the try block
+        socket.emit("sendAnswer", {
+          answer: peerConnection.localDescription,
+          to: data.from,
+        });
+      } catch (error) {
+        console.error("Error creating answer:", error);
+      }
     }
   }
 
   socket.on("receiveOffer", async (data) => {
-    await peerConnection.setRemoteDescription(data.offer);
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    socket.emit("sendAnswer", {
-      answer: peerConnection.localDescription,
-      to: data.from,
-    });
+    try {
+      await peerConnection.setRemoteDescription(data.offer);
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      socket.emit("sendAnswer", {
+        answer: peerConnection.localDescription,
+        to: data.from,
+      });
+    } catch (error) {
+      console.error("Error handling offer:", error);
+    }
   });
-
+  
   socket.on("receiveAnswer", async (data) => {
-    await peerConnection.setRemoteDescription(data.answer);
+    try {
+      await peerConnection.setRemoteDescription(data.answer);
+    } catch (error) {
+      console.error("Error handling answer:", error);
+    }
   });
 
   socket.on("endRapBattle", () => {
@@ -219,6 +248,27 @@ document.addEventListener("DOMContentLoaded", () => {
     opponentSocketId = null;
     modal.style.display = "none";
   });
+
+  function setupPeerConnection() {
+    peerConnection.ontrack = (event) => {
+      const stream = event.streams[0];
+      if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
+        remoteVideo.srcObject = stream;
+        remoteVideo
+          .play()
+          .catch((error) => console.warn("Error playing remote video:", error));
+      }
+    };
+  
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("sendIceCandidate", {
+          candidate: event.candidate,
+          to: opponentSocketId,
+        });
+      }
+    };
+  }
 
   function startCountdown(duration) {
     const countdownElement = document.getElementById("countdown");
