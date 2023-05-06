@@ -37,6 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("foundOpponent", (data) => {
+    // Reset state before setting up a new connection
+    resetState();
+  
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
     initiateWebRTCConnection(isInitiator);
@@ -44,11 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isInitiator) {
       startCountdown(10); // Start the countdown for 10 seconds
     }
-  
-    // Add this line to reset the `isInitiator` flag after the connection
-    socket.once("endRapBattle", () => {
-      isInitiator = false;
-    });
   
     socket.on("userDisconnected", (disconnectedSocketId) => {
       if (opponentSocketId === disconnectedSocketId) {
@@ -160,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function endRapBattle() {
     // Remove event listener for "userDisconnected"
     socket.off("userDisconnected");
-
+  
     if (localVideo.srcObject) {
       localVideo.srcObject.getTracks().forEach((track) => track.stop());
       localVideo.srcObject = null;
@@ -171,6 +169,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     opponentSocketId = null;
     modal.style.display = "none";
+  
+    // Reset state after ending the rap battle
+    resetState();
+  }
+
+  function resetState() {
+    isInitiator = false;
+    opponentSocketId = null;
+  
+    // Remove event listeners
+    socket.off("userDisconnected");
+    socket.off("endRapBattle");
   }
 
   function initiateWebRTCConnection(createOffer) {
