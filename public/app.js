@@ -15,23 +15,20 @@ document.addEventListener("DOMContentLoaded", () => {
     fightBtn.addEventListener("click", () => {
       modal.style.display = "block";
       socket.emit("requestOpponent");
-
-      // Start the camera when the fight button is clicked
-      startCamera();
     });
   }
 
   if (closeModal) {
     closeModal.addEventListener("click", () => {
       modal.style.display = "none";
-      endRapBattle(); // Stop the camera when the modal is closed
+      endRapBattle(); // Add this line to stop the camera when the modal is closed
     });
   }
-
+  
   window.addEventListener("click", (event) => {
     if (event.target === modal) {
       modal.style.display = "none";
-      endRapBattle(); // Stop the camera when the modal is closed
+      endRapBattle(); // Add this line to stop the camera when the modal is closed
     }
   });
 
@@ -87,33 +84,28 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     ],
   };
-  let peerConnection = new RTCPeerConnection(configuration);
+  const peerConnection = new RTCPeerConnection(configuration);
 
-  function startCamera() {
-    // Create a new RTCPeerConnection
-    peerConnection = new RTCPeerConnection(configuration);
-    setupPeerConnection();
-  
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        localVideo.srcObject = stream;
-        localVideo
-          .play()
-          .catch((error) => console.warn("Error playing local video:", error));
-        stream
-          .getTracks()
-          .forEach((track) => peerConnection.addTrack(track, stream));
-      })
-      .catch((error) => {
-        console.error("Error accessing media devices.", error);
-      });
-  }
-  peerConnection.ontrack = async (event) => {
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: true })
+    .then((stream) => {
+      localVideo.srcObject = stream;
+      localVideo
+        .play()
+        .catch((error) => console.warn("Error playing local video:", error));
+      stream
+        .getTracks()
+        .forEach((track) => peerConnection.addTrack(track, stream));
+    })
+    .catch((error) => {
+      console.error("Error accessing media devices.", error);
+    });
+
+  peerConnection.ontrack = (event) => {
     const stream = event.streams[0];
     if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
       remoteVideo.srcObject = stream;
-      await remoteVideo
+      remoteVideo
         .play()
         .catch((error) => console.warn("Error playing remote video:", error));
     }
@@ -160,11 +152,10 @@ document.addEventListener("DOMContentLoaded", () => {
       usersList.appendChild(listItem);
     });
   });
-
   function endRapBattle() {
     // Remove event listener for "userDisconnected"
     socket.off("userDisconnected");
-  
+
     if (localVideo.srcObject) {
       localVideo.srcObject.getTracks().forEach((track) => track.stop());
       localVideo.srcObject = null;
@@ -175,13 +166,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     opponentSocketId = null;
     modal.style.display = "none";
-  
-    // Close the existing RTCPeerConnection
-    if (peerConnection) {
-      peerConnection.close();
-      peerConnection = null;
-    }
   }
+
   function initiateWebRTCConnection(createOffer) {
     if (createOffer) {
       peerConnection
@@ -227,27 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
     opponentSocketId = null;
     modal.style.display = "none";
   });
-
-  function setupPeerConnection() {
-    peerConnection.ontrack = (event) => {
-      const stream = event.streams[0];
-      if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
-        remoteVideo.srcObject = stream;
-        remoteVideo
-          .play()
-          .catch((error) => console.warn("Error playing remote video:", error));
-      }
-    };
-  
-    peerConnection.onicecandidate = (event) => {
-      if (event.candidate) {
-        socket.emit("sendIceCandidate", {
-          candidate: event.candidate,
-          to: opponentSocketId,
-        });
-      }
-    };
-  }
 
   function startCountdown(duration) {
     const countdownElement = document.getElementById("countdown");
