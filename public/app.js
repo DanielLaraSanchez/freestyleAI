@@ -182,37 +182,37 @@ document.addEventListener("DOMContentLoaded", () => {
       peerConnection = null;
     }
   }
-  async function initiateWebRTCConnection(createOffer) {
-    if (createOffer) {
-      try {
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-  
-        socket.emit("sendOffer", {
-          offer: peerConnection.localDescription,
-          to: opponentSocketId,
-        });
-      } catch (error) {
-        console.error("Error creating offer:", error);
-      }
-    } else {
-      // Remove the following line as it's not needed
-      // await peerConnection.setRemoteDescription(data.offer);
-  
-      try {
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-  
-        // Move the socket.emit inside the try block
-        socket.emit("sendAnswer", {
-          answer: peerConnection.localDescription,
-          to: data.from,
-        });
-      } catch (error) {
-        console.error("Error creating answer:", error);
-      }
+async function initiateWebRTCConnection(createOffer) {
+  if (createOffer) {
+    try {
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+
+      socket.emit("sendOffer", {
+        offer: peerConnection.localDescription,
+        to: opponentSocketId,
+      });
+    } catch (error) {
+      console.error("Error creating offer:", error);
+    }
+  } else {
+    // Remove the following line as it's not needed
+    await peerConnection.setRemoteDescription(data.offer);
+
+    try {
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+
+      // Move the socket.emit inside the try block
+      socket.emit("sendAnswer", {
+        answer: peerConnection.localDescription,
+        to: data.from,
+      });
+    } catch (error) {
+      console.error("Error creating answer:", error);
     }
   }
+}
 
   socket.on("receiveOffer", async (data) => {
     try {
