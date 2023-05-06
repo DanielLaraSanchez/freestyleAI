@@ -182,58 +182,37 @@ document.addEventListener("DOMContentLoaded", () => {
       peerConnection = null;
     }
   }
-async function initiateWebRTCConnection(createOffer) {
-  if (createOffer) {
-    try {
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-
-      socket.emit("sendOffer", {
-        offer: peerConnection.localDescription,
-        to: opponentSocketId,
-      });
-    } catch (error) {
-      console.error("Error creating offer:", error);
-    }
-  } else {
-    // Remove the following line as it's not needed
-    await peerConnection.setRemoteDescription(data.offer);
-
-    try {
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-
-      // Move the socket.emit inside the try block
-      socket.emit("sendAnswer", {
-        answer: peerConnection.localDescription,
-        to: data.from,
-      });
-    } catch (error) {
-      console.error("Error creating answer:", error);
+  function initiateWebRTCConnection(createOffer) {
+    if (createOffer) {
+      peerConnection
+        .createOffer()
+        .then((offer) => {
+          return peerConnection.setLocalDescription(offer);
+        })
+        .then(() => {
+          socket.emit("sendOffer", {
+            offer: peerConnection.localDescription,
+            to: opponentSocketId,
+          });
+        })
+        .catch((error) => {
+          console.error("Error creating offer:", error);
+        });
     }
   }
-}
 
   socket.on("receiveOffer", async (data) => {
-    try {
-      await peerConnection.setRemoteDescription(data.offer);
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      socket.emit("sendAnswer", {
-        answer: peerConnection.localDescription,
-        to: data.from,
-      });
-    } catch (error) {
-      console.error("Error handling offer:", error);
-    }
+    await peerConnection.setRemoteDescription(data.offer);
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit("sendAnswer", {
+      answer: peerConnection.localDescription,
+      to: data.from,
+    });
   });
-  
+
   socket.on("receiveAnswer", async (data) => {
-    try {
-      await peerConnection.setRemoteDescription(data.answer);
-    } catch (error) {
-      console.error("Error handling answer:", error);
-    }
+    await peerConnection.setRemoteDescription(data.answer);
   });
 
   socket.on("endRapBattle", () => {
