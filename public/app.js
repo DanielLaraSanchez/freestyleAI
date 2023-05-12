@@ -10,61 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeModal = document.getElementById("close-modal");
 
   let opponentSocketId = null;
-
-  if (fightBtn) {
-    fightBtn.addEventListener("click", () => {
-      modal.style.display = "block";
-      socket.emit("requestOpponent");
-    });
-  }
-
-  if (closeModal) {
-    closeModal.addEventListener("click", () => {
-      modal.style.display = "none";
-      endRapBattle(); // Add this line to stop the camera when the modal is closed
-    });
-  }
-  
-  window.addEventListener("click", (event) => {
-    if (event.target === modal) {
-      modal.style.display = "none";
-      endRapBattle(); // Add this line to stop the camera when the modal is closed
-    }
-  });
-
-  socket.on("connect", () => {
-    console.log("Connected to server");
-  });
-
-  socket.on("foundOpponent", (data) => {
-    // Reset state before setting up a new connection
-    resetState();
-  
-    opponentSocketId = data.socketId;
-    isInitiator = data.isInitiator;
-    initiateWebRTCConnection(isInitiator);
-  
-    if (isInitiator) {
-      startCountdown(10); // Start the countdown for 10 seconds
-    }
-  
-    socket.on("userDisconnected", (disconnectedSocketId) => {
-      if (opponentSocketId === disconnectedSocketId) {
-        endRapBattle();
-      }
-    });
-  });
-
-  // WebRTC logic
-
-  const localVideo = document.createElement("video");
-  const remoteVideo = document.createElement("video");
-  localVideo.classList.add("local-video");
-  remoteVideo.classList.add("remote-video");
-  localVideoContainer.appendChild(localVideo);
-  remoteVideoContainer.appendChild(remoteVideo);
-  localVideo.muted = false;
-
+  let peerConnection;
   const configuration = {
     iceServers: [
       {
@@ -87,41 +33,96 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     ],
   };
-  const peerConnection = new RTCPeerConnection(configuration);
 
-  navigator.mediaDevices
-    .getUserMedia({ video: true, audio: true })
-    .then((stream) => {
-      localVideo.srcObject = stream;
-      localVideo
-        .play()
-        .catch((error) => console.warn("Error playing local video:", error));
-      stream
-        .getTracks()
-        .forEach((track) => peerConnection.addTrack(track, stream));
-    })
-    .catch((error) => {
-      console.error("Error accessing media devices.", error);
+  if (fightBtn) {
+    fightBtn.addEventListener("click", () => {
+      modal.style.display = "block";
+      socket.emit("requestOpponent");
     });
+  }
 
-  peerConnection.ontrack = (event) => {
-    const stream = event.streams[0];
-    if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
-      remoteVideo.srcObject = stream;
-      remoteVideo
-        .play()
-        .catch((error) => console.warn("Error playing remote video:", error));
+  if (closeModal) {
+    closeModal.addEventListener("click", () => {
+      endRapBattle();
+    });
+  }
+
+  window.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      endRapBattle();
     }
-  };
+  });
 
-  peerConnection.onicecandidate = (event) => {
-    if (event.candidate) {
-      socket.emit("sendIceCandidate", {
-        candidate: event.candidate,
-        to: opponentSocketId,
+  socket.on("connect", () => {
+    console.log("Connected to server");
+  });
+
+  // WebRTC logic
+
+  const localVideo = document.createElement("video");
+  const remoteVideo = document.createElement("video");
+  localVideo.classList.add("local-video");
+  remoteVideo.classList.add("remote-video");
+  localVideoContainer.appendChild(localVideo);
+  remoteVideoContainer.appendChild(remoteVideo);
+  localVideo.muted = false;
+
+  initializePeerConnection();
+
+  socket.on("foundOpponent", (data) => {
+    opponentSocketId = data.socketId;
+    isInitiator = data.isInitiator;
+
+    initiateWebRTCConnection(isInitiator);
+
+    if (isInitiator) {
+      startCountdown(10); // Start the countdown for 10 seconds
+    }
+
+    socket.on("userDisconnected", (disconnectedSocketId) => {
+      if (opponentSocketId === disconnectedSocketId) {
+        endRapBattle();
+      }
+    });
+  });
+
+  function initializePeerConnection() {
+    peerConnection = new RTCPeerConnection(configuration);
+
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
+      .then((stream) => {
+        localVideo.srcObject = stream;
+        localVideo
+          .play()
+          .catch((error) => console.warn("Error playing local video:", error));
+        stream
+          .getTracks()
+          .forEach((track) => peerConnection.addTrack(track, stream));
+      })
+      .catch((error) => {
+        console.error("Error accessing media devices.", error);
       });
-    }
-  };
+
+    peerConnection.ontrack = (event) => {
+      const stream = event.streams[0];
+      if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
+        remoteVideo.srcObject = stream;
+        remoteVideo
+          .play()
+          .catch((error) => console.warn("Error playing remote video:", error));
+      }
+    };
+
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("sendIceCandidate", {
+          candidate: event.candidate,
+          to: opponentSocketId,
+        });
+      }
+    };
+  }
 
   socket.on("receiveIceCandidate", async (data) => {
     const candidate = new RTCIceCandidate(data.candidate);
@@ -155,10 +156,11 @@ document.addEventListener("DOMContentLoaded", () => {
       usersList.appendChild(listItem);
     });
   });
+
   function endRapBattle() {
     // Remove event listener for "userDisconnected"
     socket.off("userDisconnected");
-  
+
     if (localVideo.srcObject) {
       localVideo.srcObject.getTracks().forEach((track) => track.stop());
       localVideo.srcObject = null;
@@ -169,18 +171,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     opponentSocketId = null;
     modal.style.display = "none";
-  
-    // Reset state after ending the rap battle
-    resetState();
-  }
 
-  function resetState() {
+    // Close the peer connection
+    peerConnection.close();
+
+    // Initialize a new peer connection
+    initializePeerConnection();
+
+    // Set isInitiator back to false
     isInitiator = false;
-    opponentSocketId = null;
-  
-    // Remove event listeners
-    socket.off("userDisconnected");
-    socket.off("endRapBattle");
+
+    // Emit "leaveRoom" event to inform the server to reset the room
+    socket.emit("leaveRoom");
   }
 
   function initiateWebRTCConnection(createOffer) {

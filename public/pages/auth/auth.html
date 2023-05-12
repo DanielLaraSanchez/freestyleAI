@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F-RAPS</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
+    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+</head>
+<body>
+    <mat-card>
+        <mat-card-header>
+          <mat-card-title>Login / Signup</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <form>
+            <mat-form-field appearance="outline">
+              <mat-label>Nickname</mat-label>
+              <input matInput type="text" required>
+            </mat-form-field>
+      
+            <mat-form-field appearance="fill">
+              <mat-label>Password</mat-label>
+              <input matInput type="password" required>
+            </mat-form-field>
+      
+            <div *ngIf="isLogin">
+              <button mat-raised-button color="primary" (click)="onLogin()">Login</button>
+            </div>
+      
+            <div *ngIf="!isLogin">
+              <mat-form-field appearance="fill">
+                <mat-label>Password Confirmation</mat-label>
+                <input matInput type="password" required>
+              </mat-form-field>
+      
+              <button mat-raised-button color="primary" (click)="onSignup()">Signup</button>
+            </div>
+          </form>
+          <div class="toggle-mode">
+            <p *ngIf="isLogin">Don't have an account? <a (click)="toggleMode()">Signup</a></p>
+            <p *ngIf="!isLogin">Already have an account? <a (click)="toggleMode()">Login</a></p>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-button color="accent" (click)="onLoginWithGoogle()">Login with Google</button>
+        </mat-card-actions>
+      </mat-card>
+      
+</body>
+</html>

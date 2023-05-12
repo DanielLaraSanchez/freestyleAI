@@ -13,35 +13,35 @@ io.on("connection", (socket) => {
   users.push(socket.id);
   io.emit("updateUserList", users);
 
-  socket.on("join-room", (roomId) => {
+  socket.on("requestOpponent", () => {
+    const roomId = "defaultRoom";
     const roomClients = io.sockets.adapter.rooms.get(roomId) || new Set();
     const numberOfClients = roomClients.size;
-  
+
     if (numberOfClients === 0) {
       console.log(`Creating room ${roomId}`);
       socket.join(roomId);
       rooms[roomId] = { creator: socket.id };
-      socket.emit("room_created_client");
     } else if (numberOfClients === 1) {
       console.log(`Joining room ${roomId}`);
       socket.join(roomId);
       rooms[roomId].joiner = socket.id;
+
+      const initiatorSocketId = rooms[roomId].creator;
+      const joinerSocketId = rooms[roomId].joiner;
+
+      io.to(initiatorSocketId).emit("foundOpponent", {
+        socketId: joinerSocketId,
+        isInitiator: true,
+      });
+      io.to(joinerSocketId).emit("foundOpponent", {
+        socketId: initiatorSocketId,
+        isInitiator: false,
+      });
     } else {
       console.log(`Room ${roomId} is full, emitting room_full`);
       socket.emit("room_full", roomId);
-    }
-  });
-
-  socket.on("requestOpponent", () => {
-    if (waitingUsers.size > 0) {
-      const opponentSocketId = getRandomOpponent(waitingUsers);
-      waitingUsers.delete(opponentSocketId);
-      socket.emit("foundOpponent", { socketId: opponentSocketId, isInitiator: true });
-      io.to(opponentSocketId).emit("foundOpponent", { socketId: socket.id, isInitiator: false });
-      io.to(socket.id).emit("startRapBattleInitiator");
-      io.to(opponentSocketId).emit("startRapBattleNonInitiator");
-    } else {
-      waitingUsers.add(socket.id);
+      resetRoom(roomId);
     }
   });
 
@@ -63,11 +63,12 @@ io.on("connection", (socket) => {
     io.to(data.to).emit("receiveIceCandidate", { candidate: data.candidate });
   });
 
-  socket.on("endRapBattle", (opponentId) => {
-    io.to(opponentId).emit("endRapBattle");
+  socket.on("leaveRoom", () => {
+    const roomId = "defaultRoom";
+    socket.leave(roomId);
+    resetRoom(roomId);
   });
 
-  
   socket.on("disconnect", () => {
     const index = users.indexOf(socket.id);
     if (index > -1) {
@@ -75,20 +76,28 @@ io.on("connection", (socket) => {
     }
     console.log("User disconnected:", socket.id);
     waitingUsers.delete(socket.id);
+
     io.emit("updateUserList", users);
-  
-    // Add this line to emit "endRapBattle" event to the opponent when a user disconnects
-    const opponentSocketId = Object.values(rooms).find(
-      (room) =>
-        room.creator === socket.id || room.joiner === socket.id
-    );
-    if (opponentSocketId) {
-      io.to(opponentSocketId).emit("endRapBattle");
-    }
-  
+
+    // Remove the user from the room and reset the room state
+    const roomId = "defaultRoom";
+    socket.leave(roomId);
+    resetRoom(roomId);
+
     // Emit "userDisconnected" event to all connected clients
     io.emit("userDisconnected", socket.id);
   });
+
+  function resetRoom(roomId) {
+    if (rooms[roomId]) {
+      delete rooms[roomId].creator;
+      delete rooms[roomId].joiner;
+
+      if (!rooms[roomId].creator && !rooms[roomId].joiner) {
+        delete rooms[roomId];
+      }
+    }
+  }
 
   function getRandomOpponent(users) {
     const userList = Array.from(users);
