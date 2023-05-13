@@ -1,0 +1,126 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  .main-content {
+    min-height: 100%;
+    padding: 1rem;
+  }
+  body {
+    font-family: "Poppins", sans-serif;
+    background-color: #f8f8f8;
+    height: 100%;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    z-index: 20;
+    position: relative;
+  }
+  .logo-container {
+    display: inline-flex;
+  }
+  
+  .logo {
+    font-size: 2rem;
+  }
+  
+  .auth-buttons {
+    display: flex;
+  }
+  
+  button {
+    background-color: transparent;
+    color: #333;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    border: none;
+    font-weight: bold;
+    padding: 0.5rem 0.7rem;
+  }
+  
+  button:hover {
+    background-color: rgba(128, 0, 128, 0.2); /* violet with opacity */
+  }
+  
+  #signupBtn {
+    margin-left: 0.5rem;
+  }
+  
+  .main-content {
+    min-height: 100vh;
+    color: #333;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 5;
+  }
+  
+  .main-content h2 {
+    font-size: 3.5rem;
+    font-weight: 500;
+  }
+  
+  .main-content p {
+    font-size: 1.5rem;
+  }
+  .parallax span {
+    display: inline-block;
+    transition: transform 0.3s;
+  }
+  
+  body span {
+    color: #333;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .logo {
+      font-size: 1.5rem;
+    }
+  
+    .main-content h2 {
+      font-size: 2.5rem;
+    }
+  
+    .main-content p {
+      font-size: 1.2rem;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .header {
+      flex-wrap: wrap;
+    }
+  
+    .logo-container,
+    .auth-buttons {
+      flex-basis: 100%;
+      text-align: center;
+    }
+  
+    .auth-buttons {
+      margin-top: 1rem;
+    }
+  
+    .main-content h2 {
+      font-size: 2rem;
+    }
+  
+    .main-content p {
+      font-size: 1rem;
+    }
+  }

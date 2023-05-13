@@ -1,109 +1,128 @@
 const express = require("express");
+const bodyParser = require("body-parser");
+const path = require("path");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 const app = express();
 const server = require("http").Server(app);
 const io = require("socket.io")(server);
-const rooms = {};
-const waitingUsers = new Set();
-const users = [];
+const bcrypt = require('bcrypt');
+const { setupSocketEvents } = require("./signalingserver");
 
-app.use(express.static("public"));
+const uri = "mongodb+srv://f-raps-db:rXwglEkxGfL07wP8@cluster0.fnkdvcm.mongodb.net/?retryWrites=true&w=majority";
 
-io.on("connection", (socket) => {
-  console.log("User connected: " + socket.id);
-  users.push(socket.id);
-  io.emit("updateUserList", users);
-
-  socket.on("requestOpponent", () => {
-    const roomId = "defaultRoom";
-    const roomClients = io.sockets.adapter.rooms.get(roomId) || new Set();
-    const numberOfClients = roomClients.size;
-
-    if (numberOfClients === 0) {
-      console.log(`Creating room ${roomId}`);
-      socket.join(roomId);
-      rooms[roomId] = { creator: socket.id };
-    } else if (numberOfClients === 1) {
-      console.log(`Joining room ${roomId}`);
-      socket.join(roomId);
-      rooms[roomId].joiner = socket.id;
-
-      const initiatorSocketId = rooms[roomId].creator;
-      const joinerSocketId = rooms[roomId].joiner;
-
-      io.to(initiatorSocketId).emit("foundOpponent", {
-        socketId: joinerSocketId,
-        isInitiator: true,
-      });
-      io.to(joinerSocketId).emit("foundOpponent", {
-        socketId: initiatorSocketId,
-        isInitiator: false,
-      });
-    } else {
-      console.log(`Room ${roomId} is full, emitting room_full`);
-      socket.emit("room_full", roomId);
-      resetRoom(roomId);
-    }
-  });
-
-  socket.on("sendOffer", (data) => {
-    io.to(data.to).emit("receiveOffer", {
-      offer: data.offer,
-      from: socket.id,
-    });
-  });
-
-  socket.on("sendAnswer", (data) => {
-    io.to(data.to).emit("receiveAnswer", {
-      answer: data.answer,
-      from: socket.id,
-    });
-  });
-
-  socket.on("sendIceCandidate", (data) => {
-    io.to(data.to).emit("receiveIceCandidate", { candidate: data.candidate });
-  });
-
-  socket.on("leaveRoom", () => {
-    const roomId = "defaultRoom";
-    socket.leave(roomId);
-    resetRoom(roomId);
-  });
-
-  socket.on("disconnect", () => {
-    const index = users.indexOf(socket.id);
-    if (index > -1) {
-      users.splice(index, 1);
-    }
-    console.log("User disconnected:", socket.id);
-    waitingUsers.delete(socket.id);
-
-    io.emit("updateUserList", users);
-
-    // Remove the user from the room and reset the room state
-    const roomId = "defaultRoom";
-    socket.leave(roomId);
-    resetRoom(roomId);
-
-    // Emit "userDisconnected" event to all connected clients
-    io.emit("userDisconnected", socket.id);
-  });
-
-  function resetRoom(roomId) {
-    if (rooms[roomId]) {
-      delete rooms[roomId].creator;
-      delete rooms[roomId].joiner;
-
-      if (!rooms[roomId].creator && !rooms[roomId].joiner) {
-        delete rooms[roomId];
-      }
-    }
-  }
-
-  function getRandomOpponent(users) {
-    const userList = Array.from(users);
-    return userList[Math.floor(Math.random() * userList.length)];
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
   }
 });
+
+async function connectToMongoDB() {
+  try {
+    await client.connect();
+    console.log("Connected to MongoDB!");
+  } catch (error) {
+    console.error("Error connecting to MongoDB", error);
+  }
+}
+
+connectToMongoDB();
+
+app.use(bodyParser.json());
+
+const setMimeTypes = (res, filePath) => {
+  if (filePath.endsWith(".css")) {
+    res.setHeader("Content-Type", "text/css");
+  } else if (filePath.endsWith(".js")) {
+    res.setHeader("Content-Type", "application/javascript");
+  }
+};
+
+app.use((req, res, next) => {
+  setMimeTypes(res, req.url);
+  express.static(path.join(__dirname, "public"), { setHeaders: setMimeTypes })(req, res, next);
+});
+
+app.get("/", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "public/pages/landing-page", "landingPage.html")
+  );
+});
+
+app.get("/auth", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
+});
+
+app.get("/landing-page", (req, res) => {
+  res.sendFile(
+    path.join(__dirname, "public/pages/landing-page", "landingPage.html")
+  );
+});
+
+app.get("/battlefield", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/pages/battlefield", "battlefield.html"));
+});
+
+app.get("/signout", (req, res) => {
+  // Perform any necessary sign-out actions, such as clearing session data
+
+  // Redirect the user to the desired page after sign-out
+  res.redirect("/landing-page");
+});
+
+app.post("/auth/login", async (req, res) => {
+  const { nickname, password } = req.body;
+
+  const db = client.db("f-raps-db");
+  const usersCollection = db.collection("User");
+
+  try {
+    const user = await usersCollection.findOne({ nickname });
+
+    if (!user) {
+      res.status(401).send("Invalid nickname or password");
+    } else {
+      // Compare the provided password with the stored hashed password
+      const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+      if (isPasswordMatch) {
+        res.status(200).send("Login successful");
+      } else {
+        res.status(401).send("Invalid nickname or password");
+      }
+    }
+  } catch (error) {
+    console.error("Error in /auth/login", error);
+    res.status(500).send("Server error");
+  }
+});
+
+app.post("/auth/signup", async (req, res) => {
+  const { nickname, password } = req.body;
+
+  const db = client.db("f-raps-db");
+  const usersCollection = db.collection("User");
+
+  try {
+    const existingUser = await usersCollection.findOne({ nickname });
+
+    if (existingUser) {
+      res.status(409).send("Nickname already in use");
+    } else {
+      // Hash the password using bcrypt
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await usersCollection.insertOne({ nickname, password: hashedPassword });
+      res.status(200).json({ message: "Signup successful", redirectUrl: "pages/battlefield/battlefield.html" });
+    }
+  } catch (error) {
+    console.error("Error in /auth/signup", error);
+    res.status(500).send("Server error");
+  }
+});
+
+setupSocketEvents(io);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {

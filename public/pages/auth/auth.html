@@ -2,52 +2,76 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F-RAPS</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-pink.min.css">
-    <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
+    <title>Authentication</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link rel="stylesheet" href="pages/auth/auth.css">
 </head>
 <body>
-    <mat-card>
-        <mat-card-header>
-          <mat-card-title>Login / Signup</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <form>
-            <mat-form-field appearance="outline">
-              <mat-label>Nickname</mat-label>
-              <input matInput type="text" required>
-            </mat-form-field>
-      
-            <mat-form-field appearance="fill">
-              <mat-label>Password</mat-label>
-              <input matInput type="password" required>
-            </mat-form-field>
-      
-            <div *ngIf="isLogin">
-              <button mat-raised-button color="primary" (click)="onLogin()">Login</button>
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m6 offset-m3">
+                <ul class="tabs">
+                    <li class="tab col s6"><a href="#login">Log In</a></li>
+                    <li class="tab col s6"><a href="#signup">Sign Up</a></li>
+                </ul>
             </div>
-      
-            <div *ngIf="!isLogin">
-              <mat-form-field appearance="fill">
-                <mat-label>Password Confirmation</mat-label>
-                <input matInput type="password" required>
-              </mat-form-field>
-      
-              <button mat-raised-button color="primary" (click)="onSignup()">Signup</button>
+            <div id="login" class="col s12 m6 offset-m3">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title center-align">Log In</span>
+
+                        <div class="input-field">
+                            <i class="material-icons prefix">account_circle</i>
+                            <input id="login-nickname" type="text" class="validate">
+                            <label for="login-nickname">Nickname</label>
+                        </div>
+                        <div class="input-field">
+                            <i class="material-icons prefix">lock</i>
+                            <input id="login-password" type="password" class="validate">
+                            <label for="login-password">Password</label>
+                        </div>
+
+                        <p class="center-align">
+                            <button class="btn waves-effect waves-light" id="login-btn">
+                                Log In
+                                <i class="material-icons right">send</i>
+                            </button>
+                        </p>
+                    </div>
+                </div>
             </div>
-          </form>
-          <div class="toggle-mode">
-            <p *ngIf="isLogin">Don't have an account? <a (click)="toggleMode()">Signup</a></p>
-            <p *ngIf="!isLogin">Already have an account? <a (click)="toggleMode()">Login</a></p>
-          </div>
-        </mat-card-content>
-        <mat-card-actions>
-          <button mat-button color="accent" (click)="onLoginWithGoogle()">Login with Google</button>
-        </mat-card-actions>
-      </mat-card>
-      
+            <div id="signup" class="col s12 m6 offset-m3">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title center-align">Sign Up</span>
+
+                        <div class="input-field">
+                            <i class="material-icons prefix">account_circle</i>
+                            <input id="signup-nickname" type="text" class="validate">
+                            <label for="signup-nickname">Nickname</label>
+                        </div>
+                        <div class="input-field">
+                            <i class="material-icons prefix">lock</i>
+                            <input id="signup-password" type="password" class="validate">
+                            <label for="signup-password">Password</label>
+                        </div>
+
+                        <p class="center-align">
+                            <button class="btn waves-effect waves-light" id="signup-btn">
+                                Sign Up
+                                <i class="material-icons right">send</i>
+                            </button>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="pages/auth/auth.js"></script>
 </body>
 </html>
