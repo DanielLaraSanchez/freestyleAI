@@ -68,7 +68,7 @@ app.get("/signout", (req, res) => {
   // Perform any necessary sign-out actions, such as clearing session data
 
   // Redirect the user to the desired page after sign-out
-  res.redirect("/landing-page");
+  res.redirect("/auth");
 });
 
 app.post("/auth/login", async (req, res) => {
