@@ -4,6 +4,7 @@ const path = require("path");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const app = express();
 const server = require("http").Server(app);
+const cors = require("cors");
 const io = require("socket.io")(server);
 const bcrypt = require('bcrypt');
 const { setupSocketEvents } = require("./signalingserver");
@@ -30,6 +31,7 @@ async function connectToMongoDB() {
 connectToMongoDB();
 
 app.use(bodyParser.json());
+app.use(cors()); // Add this line before other middlewares
 
 const setMimeTypes = (res, filePath) => {
   if (filePath.endsWith(".css")) {
