@@ -35,8 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   if (fightBtn) {
-    fightBtn.addEventListener("click", () => {
+    fightBtn.addEventListener("click", async () => {
       modal.style.display = "block";
+      await startMediaCapture();
       socket.emit("requestOpponent");
     });
   }
@@ -85,25 +86,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+  function startMediaCapture() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        localVideo.srcObject = stream;
+        await localVideo.play();
+        stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+        resolve();
+      } catch (error) {
+        console.error("Error accessing media devices.", error);
+        reject(error);
+      }
+    });
+  }
 
   function initializePeerConnection() {
     peerConnection = new RTCPeerConnection(configuration);
-
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        localVideo.srcObject = stream;
-        localVideo
-          .play()
-          .catch((error) => console.warn("Error playing local video:", error));
-        stream
-          .getTracks()
-          .forEach((track) => peerConnection.addTrack(track, stream));
-      })
-      .catch((error) => {
-        console.error("Error accessing media devices.", error);
-      });
-
+    
     peerConnection.ontrack = (event) => {
       const stream = event.streams[0];
       if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
