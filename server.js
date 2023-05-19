@@ -6,7 +6,7 @@ const app = express();
 const server = require("http").Server(app);
 const cors = require("cors");
 const io = require("socket.io")(server);
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { setupSocketEvents } = require("./signalingserver");
 
 const uri = "mongodb+srv://f-raps-db:rXwglEkxGfL07wP8@cluster0.fnkdvcm.mongodb.net/?retryWrites=true&w=majority";
