@@ -6,7 +6,7 @@ const app = express();
 const server = require("http").Server(app);
 const cors = require("cors");
 const io = require("socket.io")(server);
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 const { setupSocketEvents } = require("./signalingserver");
 
 const uri = "mongodb+srv://f-raps-db:rXwglEkxGfL07wP8@cluster0.fnkdvcm.mongodb.net/?retryWrites=true&w=majority";
@@ -89,7 +89,7 @@ app.post("/auth/login", async (req, res) => {
       const isPasswordMatch = await bcrypt.compare(password, user.password);
 
       if (isPasswordMatch) {
-        res.status(200).send("Login successful");
+        res.status(200).send({ message: "Login successful", redirectUrl: "pages/battlefield/battlefield.html" } );
       } else {
         res.status(401).send("Invalid nickname or password");
       }

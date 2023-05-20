@@ -20,8 +20,14 @@ document.addEventListener('DOMContentLoaded', function () {
         const xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
             if (this.readyState === 4 && this.status === 200) {
-                // Redirect to the desired route
-                window.location.href = '/battlefield';
+                // Create a new URL object
+                const url = new URL('pages/battlefield/battlefield.html', window.location.origin);
+
+                // Append the nickname parameter to the new URL
+                url.searchParams.append('nickname', encodeURIComponent(nickname));
+
+                // Redirect to the new URL
+                window.location.href = url.href;
             } else if (this.readyState === 4) {
                 M.toast({ html: 'Error: ' + this.responseText });
             }
@@ -47,9 +53,15 @@ document.addEventListener('DOMContentLoaded', function () {
               // Parse the response JSON and get the redirect URL
               const response = JSON.parse(this.responseText);
               const redirectUrl = response.redirectUrl;
-        
-              // Redirect to the desired route
-              window.location.href = redirectUrl;
+
+              // Create a new URL object
+              const url = new URL(redirectUrl, window.location.origin);
+
+              // Append the nickname parameter to the new URL
+              url.searchParams.append('nickname', encodeURIComponent(nickname));
+
+              // Redirect to the new URL
+              window.location.href = url.href;
             } else if (this.readyState === 4) {
               M.toast({ html: 'Error: ' + this.responseText });
             }

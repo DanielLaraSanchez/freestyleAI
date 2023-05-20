@@ -1,6 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Get the nickname from the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const myNickname = urlParams.get("nickname");
+  // Add myNickname to the socket handshake query
+  const socket = io({ query: { nickname: myNickname } });
+
   let isInitiator = false;
-  const socket = io();
+
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
   const remoteVideoContainer = document.querySelector(
@@ -95,7 +101,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         localVideo.srcObject = stream;
         await localVideo.play();
-        stream.getTracks().forEach((track) => peerConnection.addTrack(track, stream));
+        stream
+          .getTracks()
+          .forEach((track) => peerConnection.addTrack(track, stream));
         resolve();
       } catch (error) {
         console.error("Error accessing media devices.", error);
@@ -106,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function initializePeerConnection() {
     peerConnection = new RTCPeerConnection(configuration);
-    
+
     peerConnection.ontrack = (event) => {
       const stream = event.streams[0];
       if (!remoteVideo.srcObject || remoteVideo.srcObject.id !== stream.id) {
@@ -152,7 +160,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const userNameWrapper = document.createElement("div");
       const userName = document.createElement("span");
-      userName.textContent = user === socket.id ? "YOU" : user;
+
+      // Use user.nickname instead of user.socketId
+      userName.textContent = user.socketId === socket.id ? "YOU" : user.nickname;
       userNameWrapper.appendChild(userName);
       listItem.appendChild(userNameWrapper);
 
