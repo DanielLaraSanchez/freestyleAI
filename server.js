@@ -9,6 +9,8 @@ const io = require("socket.io")(server);
 const bcrypt = require("bcryptjs");
 const { setupSocketEvents } = require("./signalingserver");
 const session = require("express-session");
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
@@ -116,6 +118,14 @@ app.use(
   })
 );
 
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  } else {
+    res.redirect("/auth");
+  }
+}
+
 // Initialize Passport.js middleware
 app.use(passport.initialize());
 app.use(passport.session());
@@ -136,7 +146,11 @@ app.get("/", (req, res) => {
 });
 
 app.get("/auth", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
+  if (req.isAuthenticated()) {
+    res.redirect("/battlefield");
+  } else {
+    res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
+  }
 });
 
 app.get("/landing-page", (req, res) => {
@@ -145,16 +159,8 @@ app.get("/landing-page", (req, res) => {
   );
 });
 
-app.get("/battlefield", (req, res) => {
-  console.log()
-  // Check if user is logged in
-  if (!req.session.loggedIn) {
-    res.redirect("/auth");
-  } else {
-    res.sendFile(
-      path.join(__dirname, "public/pages/battlefield", "battlefield.html")
-    );
-  }
+app.get("/battlefield", ensureAuthenticated, (req, res) => { // Add ensureAuthenticated middleware
+  res.sendFile(path.join(__dirname, "public/pages/battlefield", "battlefield.html"));
 });
 
 app.get('/signout', async (req, res) => {
@@ -164,7 +170,7 @@ app.get('/signout', async (req, res) => {
   await activeSessionsCollection.deleteOne({ sessionId: req.session.id });
   
   // req.logout(); // Passport.js function to logout
-  req.session.loggedIn = true;
+  req.session.loggedIn = false;
   req.session.destroy(); // Destroy the session
   res.redirect('/auth');
 });
@@ -197,6 +203,7 @@ app.post("/auth/login", (req, res, next) => {
 
       console.log("Login successful");
       req.session.loggedIn = true;
+      res.cookie("fRapsUser", {nickname: user.nickname});
       req.session.user = user;
 
       // Insert session information into ActiveSessions collection
@@ -243,6 +250,7 @@ app.post("/auth/signup", async (req, res, next) => {
             return res.status(500).send("Server error");
           }
           req.session.loggedIn = true;
+          res.cookie("fRapsUser", {nickname: user.nickname});
           req.session.user = user;
 
           // Insert session information into ActiveSessions collection
