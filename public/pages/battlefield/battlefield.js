@@ -112,6 +112,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function clearCookie(name) {
+    document.cookie =
+      name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  }
+
   function initializePeerConnection() {
     peerConnection = new RTCPeerConnection(configuration);
 
@@ -162,7 +167,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const userName = document.createElement("span");
 
       // Use user.nickname instead of user.socketId
-      userName.textContent = user.socketId === socket.id ? "YOU" : user.nickname;
+      userName.textContent =
+        user.socketId === socket.id ? "YOU" : user.nickname;
       userNameWrapper.appendChild(userName);
       listItem.appendChild(userNameWrapper);
 
@@ -272,8 +278,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const signoutBtn = document.getElementById("signout-btn");
 
   // Attach a click event listener
-  signoutBtn.addEventListener("click", function () {
+  signoutBtn.addEventListener("click", async function () {
+    // Clear the cookie
+    clearCookie("fRapsUser");
+
     // Redirect the user to the sign-out route
     window.location.href = "/signout";
-  });
+});
 });

@@ -53,14 +53,16 @@ passport.use(
   new LocalStrategy(
     { usernameField: "nickname", passwordField: "password" },
     async (nickname, password, done) => {
-          // Check for existing sessions
-    const db = client.db("f-raps-db");
-    const activeSessionsCollection = db.collection("ActiveSessions");
+      // Check for existing sessions
+      const db = client.db("f-raps-db");
+      const activeSessionsCollection = db.collection("ActiveSessions");
 
-    const existingSession = await activeSessionsCollection.findOne({ nickname });
-    if (existingSession) {
-      return done(null, false, { message: 'User already logged in' }); // Active session detected
-    }
+      const existingSession = await activeSessionsCollection.findOne({
+        nickname,
+      });
+      if (existingSession) {
+        return done(null, false, { message: "User already logged in" }); // Active session detected
+      }
       // Add user authentication logic
       const usersCollection = db.collection("User");
 
@@ -95,10 +97,10 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (nickname, done) => {
   const db = client.db("f-raps-db");
   const usersCollection = db.collection("User");
-  
+
   try {
     const user = await usersCollection.findOne({ nickname });
-    
+
     if (user) {
       done(null, user);
     } else {
@@ -114,7 +116,7 @@ app.use(
     secret: "your-secret-key",
     resave: false,
     saveUninitialized: false, // should be false
-    cookie: { secure: process.env.NODE_ENV === 'production' }, // should only be secure in production environment
+    cookie: { secure: process.env.NODE_ENV === "production" }, // should only be secure in production environment
   })
 );
 
@@ -139,6 +141,14 @@ app.use((req, res, next) => {
   );
 });
 
+app.get("/checkLoginStatus", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.status(200).send({ loggedIn: true });
+  } else {
+    res.status(200).send({ loggedIn: false });
+  }
+});
+
 app.get("/", (req, res) => {
   res.sendFile(
     path.join(__dirname, "public/pages/landing-page", "landingPage.html")
@@ -146,11 +156,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/auth", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.redirect("/battlefield");
-  } else {
-    res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
-  }
+  res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
 });
 
 app.get("/landing-page", (req, res) => {
@@ -159,20 +165,40 @@ app.get("/landing-page", (req, res) => {
   );
 });
 
-app.get("/battlefield", ensureAuthenticated, (req, res) => { // Add ensureAuthenticated middleware
-  res.sendFile(path.join(__dirname, "public/pages/battlefield", "battlefield.html"));
+app.get("/battlefield", async (req, res) => {
+  if (req.isAuthenticated()) {
+    const db = client.db("f-raps-db");
+    const activeSessionsCollection = db.collection("ActiveSessions");
+
+    const existingSession = await activeSessionsCollection.findOne({
+      nickname: req.user.nickname,
+    });
+    if (existingSession && existingSession.sessionId !== req.session.id) {
+      console.log("");
+      res.redirect("/auth");
+    } else {
+      res.sendFile(
+        path.join(__dirname, "public/pages/battlefield", "battlefield.html")
+      );
+    }
+  } else {
+    res.redirect("/auth");
+  }
 });
 
-app.get('/signout', async (req, res) => {
+app.get("/signout", async (req, res) => {
   const db = client.db("f-raps-db");
   const activeSessionsCollection = db.collection("ActiveSessions");
 
   await activeSessionsCollection.deleteOne({ sessionId: req.session.id });
-  
-  // req.logout(); // Passport.js function to logout
+
+  // Add this line - clear the session cookie
+  res.clearCookie("connect.sid", { path: "/" });
+
+  req.logout(); // Passport.js function to logout
   req.session.loggedIn = false;
   req.session.destroy(); // Destroy the session
-  res.redirect('/auth');
+  res.redirect("/auth");
 });
 
 app.post("/auth/login", (req, res, next) => {
@@ -203,7 +229,7 @@ app.post("/auth/login", (req, res, next) => {
 
       console.log("Login successful");
       req.session.loggedIn = true;
-      res.cookie("fRapsUser", {nickname: user.nickname});
+      res.cookie("fRapsUser", { nickname: user.nickname });
       req.session.user = user;
 
       // Insert session information into ActiveSessions collection
@@ -227,7 +253,9 @@ app.post("/auth/signup", async (req, res, next) => {
     const existingUser = await usersCollection.findOne({ nickname });
 
     // Check if the user is already logged in before signing up
-    const existingSession = await activeSessionsCollection.findOne({ nickname });
+    const existingSession = await activeSessionsCollection.findOne({
+      nickname,
+    });
     if (existingSession) {
       return res.status(409).send("This user is already logged in");
     }
@@ -250,7 +278,7 @@ app.post("/auth/signup", async (req, res, next) => {
             return res.status(500).send("Server error");
           }
           req.session.loggedIn = true;
-          res.cookie("fRapsUser", {nickname: user.nickname});
+          res.cookie("fRapsUser", { nickname: user.nickname });
           req.session.user = user;
 
           // Insert session information into ActiveSessions collection

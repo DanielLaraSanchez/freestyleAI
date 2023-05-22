@@ -1,4 +1,17 @@
 document.addEventListener('DOMContentLoaded', function () {
+    (async () => {
+        try {
+          const response = await fetch('/checkLoginStatus');
+          if (response.ok) {
+            const responseData = await response.json();
+            if (responseData.loggedIn) {
+              M.toast({ html: 'You are already logged in.' });
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching auth status:', error);
+        }
+      })();
     // Initialize tabs
     M.Tabs.init(document.querySelectorAll('.tabs'));
 
@@ -9,7 +22,10 @@ document.addEventListener('DOMContentLoaded', function () {
     // Attach click event listeners
     loginBtn.addEventListener('click', async function () {
         console.log('signup button clicked'); // Add this line
-
+        if (document.cookie.indexOf("fRapsUser") !== -1) {
+            M.toast({ html: 'You are already logged in.' });
+            return;
+          }
         const nickname = document.getElementById('login-nickname').value;
         const password = document.getElementById('login-password').value;
       
