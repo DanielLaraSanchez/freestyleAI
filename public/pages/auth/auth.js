@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       
         try {
-          const response = await fetch('/auth/signup', {
+          const response = await fetch('https://quiet-cove-48780.herokuapp.com/auth/signup', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
