@@ -286,7 +286,8 @@ app.post("/auth/signup", async (req, res, next) => {
             nickname: user.nickname,
             sessionId: req.session.id,
           });
-
+          console.log('User authenticated:', user);
+          console.log('Session:', req.session);
           return res.status(200).end();
         });
       })(req, res, next);
