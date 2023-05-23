@@ -141,6 +141,14 @@ app.use((req, res, next) => {
   );
 });
 
+function redirectToAuthIfNotLoggedIn(req, res, next) {
+  if (req.isAuthenticated()) {
+    next();
+  } else {
+    res.redirect("/auth");
+  }
+}
+
 app.get("/checkLoginStatus", (req, res) => {
   if (req.isAuthenticated()) {
     res.status(200).send({ loggedIn: true });
@@ -165,7 +173,7 @@ app.get("/landing-page", (req, res) => {
   );
 });
 
-app.get("/battlefield", async (req, res) => {
+app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   if (req.isAuthenticated()) {
     const db = client.db("f-raps-db");
     const activeSessionsCollection = db.collection("ActiveSessions");
