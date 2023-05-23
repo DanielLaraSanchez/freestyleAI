@@ -110,15 +110,25 @@ passport.deserializeUser(async (nickname, done) => {
     done(error, null);
   }
 });
+
+app.use((req, res, next) => {
+  if (req.header("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {
+    res.redirect(301, `https://${req.header("host")}${req.url}`);
+  } else {
+    next();
+  }
+});
+
 // Configure express-session middleware
 app.use(
   session({
     secret: "your-secret-key",
     resave: false,
     saveUninitialized: false, // should be false
-    // cookie: { secure: process.env.NODE_ENV === "production" }, // should only be secure in production environment
+    cookie: { secure: process.env.NODE_ENV === "production" }, // should only be secure in production environment
   })
 );
+
 
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
