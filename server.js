@@ -1,14 +1,16 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+const session = require("express-session");
+
 const path = require("path");
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const MongoDBStore = require("connect-mongodb-session")(session);
 const app = express();
 const server = require("http").Server(app);
 const cors = require("cors");
 const io = require("socket.io")(server);
 const bcrypt = require("bcryptjs");
 const { setupSocketEvents } = require("./signalingserver");
-const session = require("express-session");
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
@@ -38,7 +40,7 @@ async function connectToMongoDB() {
 connectToMongoDB();
 
 app.use(bodyParser.json());
-app.use(cors()); // Add this line before other middlewares
+app.use(cors());
 
 const setMimeTypes = (res, filePath) => {
   if (filePath.endsWith(".css")) {
@@ -47,6 +49,7 @@ const setMimeTypes = (res, filePath) => {
     res.setHeader("Content-Type", "application/javascript");
   }
 };
+
 
 // Configure Passport.js
 passport.use(
@@ -129,7 +132,36 @@ app.use(
   })
 );
 
+app.use((req, res, next) => {
+  if (req.header("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {
+    res.redirect(301, `https://${req.header("host")}${req.url}`);
+  } else {
+    next();
+  }
+});
 
+// Configure the session store
+const store = new MongoDBStore({
+  uri: uri,
+  collection: "sessions",
+  clientPromise: client
+});
+
+// Catch errors
+store.on("error", function (error) {
+  console.error("Session store error:", error);
+});
+
+// Configure express-session middleware
+app.use(
+  session({
+    secret: "your-secret-key",
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+    cookie: { secure: process.env.NODE_ENV === "production" },
+  })
+);
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
@@ -213,10 +245,12 @@ app.get("/signout", async (req, res) => {
   // Add this line - clear the session cookie
   res.clearCookie("connect.sid", { path: "/" });
 
-  req.logout(); // Passport.js function to logout
-  req.session.loggedIn = false;
-  req.session.destroy(); // Destroy the session
-  res.redirect("/auth");
+  req.logout(() => {
+    // Add this callback function
+    req.session.loggedIn = false;
+    req.session.destroy(); // Destroy the session
+    res.redirect("/auth");
+  });
 });
 
 app.post("/auth/login", (req, res, next) => {
