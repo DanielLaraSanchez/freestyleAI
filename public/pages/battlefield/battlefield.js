@@ -1,9 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
+  function getCookieValue(name) {
+    const matchedCookie = document.cookie.match(new RegExp(name + "=([^;]+)"));
+    if (matchedCookie && matchedCookie[1]) {
+      const cookieValue = decodeURIComponent(matchedCookie[1]);
+      try {
+        const parsedValue = JSON.parse(cookieValue);
+        return parsedValue.nickname;
+      } catch (error) {
+        // If parsing fails, return the value as is
+        return cookieValue;
+      }
+    } else {
+      return null;
+    }
+  }
   // Get the nickname from the URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const myNickname = urlParams.get("nickname");
+  const myNickname = getCookieValue("fRapsUser");
+
   // Add myNickname to the socket handshake query
   const socket = io({ query: { nickname: myNickname } });
+  socket.on("clearCookies", () => {
+
+    document.cookie = 'fRapsUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  })
 
   let isInitiator = false;
 
@@ -284,5 +303,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Redirect the user to the sign-out route
     window.location.href = "/signout";
-});
+  });
 });

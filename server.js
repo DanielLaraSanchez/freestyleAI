@@ -10,7 +10,7 @@ const server = require("http").Server(app);
 const cors = require("cors");
 const io = require("socket.io")(server);
 const bcrypt = require("bcryptjs");
-const { setupSocketEvents } = require("./signalingserver");
+const { setupSocketEvents, signalingEvents } = require("./signalingserver");
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
@@ -27,6 +27,24 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+async function logoutUserByNickname(nickname, userSessionId) {
+  try {
+    const db = client.db("f-raps-db");
+    const activeSessionsCollection = db.collection("ActiveSessions");
+
+    if (userSessionId) {
+      await activeSessionsCollection.deleteOne({
+        sessionId: userSessionId,
+      });
+      console.log(`User '${nickname}' has been logged out successfully.`);
+      io.to(userSessionId).emit("clearCookies");
+    } else {
+      console.log(`User: '${nickname}' has not  been found`);
+    }
+  } catch (error) {
+    console.error(`Error logging out user '${nickname}':`, error);
+  }
+}
 
 async function connectToMongoDB() {
   try {
@@ -36,6 +54,18 @@ async function connectToMongoDB() {
     console.error("Error connecting to MongoDB", error);
   }
 }
+
+signalingEvents.on("userDisconnected", async (nickname) => {
+  console.log(`User ${nickname} disconnected from signaling server.`);
+  const db = client.db("f-raps-db");
+
+  const activeSessionsCollection = db.collection("ActiveSessions");
+
+  const existingSession = await activeSessionsCollection.findOne({
+    nickname,
+  });
+  await logoutUserByNickname(nickname, existingSession?.sessionId);
+});
 
 connectToMongoDB();
 
@@ -49,7 +79,6 @@ const setMimeTypes = (res, filePath) => {
     res.setHeader("Content-Type", "application/javascript");
   }
 };
-
 
 // Configure Passport.js
 passport.use(
@@ -115,7 +144,10 @@ passport.deserializeUser(async (nickname, done) => {
 });
 
 app.use((req, res, next) => {
-  if (req.header("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {
+  if (
+    req.header("x-forwarded-proto") !== "https" &&
+    process.env.NODE_ENV === "production"
+  ) {
     res.redirect(301, `https://${req.header("host")}${req.url}`);
   } else {
     next();
@@ -133,7 +165,10 @@ app.use(
 );
 
 app.use((req, res, next) => {
-  if (req.header("x-forwarded-proto") !== "https" && process.env.NODE_ENV === "production") {
+  if (
+    req.header("x-forwarded-proto") !== "https" &&
+    process.env.NODE_ENV === "production"
+  ) {
     res.redirect(301, `https://${req.header("host")}${req.url}`);
   } else {
     next();
@@ -144,7 +179,7 @@ app.use((req, res, next) => {
 const store = new MongoDBStore({
   uri: uri,
   collection: "sessions",
-  clientPromise: client
+  clientPromise: client,
 });
 
 // Catch errors
@@ -191,13 +226,13 @@ function redirectToAuthIfNotLoggedIn(req, res, next) {
   }
 }
 
-app.get("/checkLoginStatus", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.status(200).send({ loggedIn: true });
-  } else {
-    res.status(200).send({ loggedIn: false });
-  }
-});
+// app.get("/checkLoginStatus", (req, res) => {
+//   if (req.isAuthenticated()) {
+//     res.status(200).send({ loggedIn: true });
+//   } else {
+//     res.status(200).send({ loggedIn: false });
+//   }
+// });
 
 app.get("/", (req, res) => {
   res.sendFile(
@@ -237,6 +272,7 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
 });
 
 app.get("/signout", async (req, res) => {
+  console.log("logout works");
   const db = client.db("f-raps-db");
   const activeSessionsCollection = db.collection("ActiveSessions");
 
@@ -281,7 +317,9 @@ app.post("/auth/login", (req, res, next) => {
 
       console.log("Login successful");
       req.session.loggedIn = true;
-      res.cookie("fRapsUser", { nickname: user.nickname });
+      // res.cookie("fRapsUser", { nickname: user.nickname });
+      res.cookie("fRapsUser", user.nickname);
+
       req.session.user = user;
 
       // Insert session information into ActiveSessions collection
@@ -330,7 +368,7 @@ app.post("/auth/signup", async (req, res, next) => {
             return res.status(500).send("Server error");
           }
           req.session.loggedIn = true;
-          res.cookie("fRapsUser", { nickname: user.nickname });
+          res.cookie("fRapsUser", user.nickname);
           req.session.user = user;
 
           // Insert session information into ActiveSessions collection
@@ -338,8 +376,8 @@ app.post("/auth/signup", async (req, res, next) => {
             nickname: user.nickname,
             sessionId: req.session.id,
           });
-          console.log('User authenticated:', user);
-          console.log('Session:', req.session);
+          console.log("User authenticated:", user);
+          console.log("Session:", req.session);
           return res.status(200).end();
         });
       })(req, res, next);

@@ -1,4 +1,8 @@
+const { EventEmitter } = require("events");
+const signalingEvents = new EventEmitter();
+
 function setupSocketEvents(io) {
+
   const waitingUsers = new Set();
   const users = [];
 
@@ -66,20 +70,19 @@ function setupSocketEvents(io) {
     socket.on("disconnect", () => {
       const index = users.findIndex((user) => user.socketId === socket.id);
       if (index > -1) {
+        signalingEvents.emit("userDisconnected", users[index].nickname);
+
         users.splice(index, 1);
       }
       console.log("User disconnected:", socket.id);
       waitingUsers.delete(socket.id);
 
       io.emit("updateUserList", users);
-
       socket.rooms.forEach((roomId) => {
         if (roomId !== socket.id) {
           socket.leave(roomId);
         }
       });
-
-      io.emit("userDisconnected", socket.id);
     });
 
     function getRandomOpponent(users) {
@@ -89,4 +92,4 @@ function setupSocketEvents(io) {
   });
 }
 
-module.exports = { setupSocketEvents };
+module.exports = { setupSocketEvents, signalingEvents };
