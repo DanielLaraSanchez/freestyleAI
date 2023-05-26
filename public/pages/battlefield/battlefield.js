@@ -19,10 +19,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Add myNickname to the socket handshake query
   const socket = io({ query: { nickname: myNickname } });
-  socket.on("clearCookies", () => {
 
-    document.cookie = 'fRapsUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  })
+  socket.on("clearCookies", () => {
+    document.cookie =
+      "fRapsUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  });
 
   let isInitiator = false;
 
@@ -298,10 +299,65 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Attach a click event listener
   signoutBtn.addEventListener("click", async function () {
+    console.log("works")
     // Clear the cookie
     clearCookie("fRapsUser");
 
     // Redirect the user to the sign-out route
     window.location.href = "/signout";
   });
+
+
+//************************************************************************************************************ */
+                  //CHAT
+//************************************************************************************************************* */                  
+  const chatInput = document.getElementById("chat-input");
+  const chatSendBtn = document.getElementById("chat-send-btn");
+  const chatMessagesContainer = document.querySelector(
+    ".chat-messages-container"
+  );
+
+  chatSendBtn.addEventListener("click", () => {
+      console.log("works chat button")
+    if (chatInput.value !== "") {
+      // Emit chat message event to the server
+      socket.emit("chatMessage", chatInput.value);
+      chatInput.value = "";
+    }
+  });
+
+  chatInput.addEventListener("keyup", (e) => {
+    if (e.keyCode === 13 && chatInput.value !== "") {
+      // Emit chat message event to the server
+      socket.emit("chatMessage", chatInput.value);
+      chatInput.value = "";
+    }
+  });
+
+  // Receive chat message from the server
+  socket.on("chatMessage", (data) => {
+    console.log(data, "message from browser")
+    const messageElement = document.createElement("div");
+    messageElement.classList.add("chat-message");
+
+    const timeStamp = new Date(data.time).toLocaleString("en-US", {
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    });
+
+    messageElement.innerHTML = `
+          <div class="chat-message-info">
+            <span class="chat-message-sender">${data.nickname}</span>
+            <span class="chat-message-time">${timeStamp}</span>
+          </div>
+          <div class="chat-message-text">${data.message}</div>
+        `;
+
+    chatMessagesContainer.appendChild(messageElement);
+
+    // Scroll to the latest message
+    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+  });
+  
 });

@@ -12,7 +12,13 @@ function setupSocketEvents(io) {
     const nickname = socket.handshake.query.nickname;
     users.push({ socketId: socket.id, nickname });
     io.emit("updateUserList", users);
-
+    socket.on("chatMessage", (message) => {
+      const nickname = socket.handshake.query.nickname;
+      const time = new Date();
+    console.log(message)
+      // Broadcast the chat message to all connected users
+      io.emit("chatMessage", { nickname, message, time });
+    });
     socket.on("requestOpponent", () => {
       waitingUsers.add(socket.id);
 

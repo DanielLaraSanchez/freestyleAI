@@ -79,7 +79,6 @@ const setMimeTypes = (res, filePath) => {
     res.setHeader("Content-Type", "application/javascript");
   }
 };
-
 // Configure Passport.js
 passport.use(
   new LocalStrategy(
