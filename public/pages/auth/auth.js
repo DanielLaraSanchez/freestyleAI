@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             console.log('Sending login request...'); // Add this line
 
-          const response = await fetch('https://dashboard.heroku.com/auth/login', {
+          const response = await fetch('https://lit-anchorage-40787.herokuapp.com/auth/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
           if (response.ok) {
             console.log("Redirecting to battlefield..."); // Add this line
 
-            location.href = 'https://dashboard.heroku.com/battlefield';
+            location.href = 'https://lit-anchorage-40787.herokuapp.com/battlefield';
           } else {
             const errorMessage = await response.text();
             M.toast({ html: 'Error: ' + errorMessage });
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       
         try {
-          const response = await fetch('https://dashboard.heroku.com/auth/signup', {
+          const response = await fetch('https://lit-anchorage-40787.herokuapp.com/auth/signup', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
           });
       
           if (response.ok) {
-            location.href = 'https://dashboard.heroku.com/battlefield';
+            location.href = 'https://lit-anchorage-40787.herokuapp.com/battlefield';
           } else {
             const errorMessage = await response.text();
             M.toast({ html: 'Error: ' + errorMessage });
