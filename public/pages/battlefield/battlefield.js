@@ -1,8 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
-  
+ 
+  async function checkIfUserConnected() {
+    try {
+      const response = await fetch('/checkLoginStatus');
+      if (response.ok) {
+        const responseData = await response.json();
+        // If user is not logged in, redirect them to the auth route
+        if (!responseData.loggedIn) {
+          // Cancel page unload
+          e.preventDefault();
+          // Redirect the user to the auth route
+          window.location.replace('/auth');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching auth status:', error);
+    }
+  };
+
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
-  const remoteVideoContainer = document.querySelector(".remote-video-container");
+  const remoteVideoContainer = document.querySelector(
+    ".remote-video-container"
+  );
   const modal = document.getElementById("modal");
   const closeModal = document.getElementById("close-modal");
   const usersList = document.getElementById("users-list");
@@ -10,7 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const signoutBtn = document.getElementById("signout-btn");
   const chatInput = document.getElementById("chat-input");
   const chatSendBtn = document.getElementById("chat-send-btn");
-  const chatMessagesContainer = document.querySelector(".chat-messages-container");
+  const chatMessagesContainer = document.querySelector(
+    ".chat-messages-container"
+  );
 
   let opponentSocketId = null;
   let isInitiator = false;
@@ -126,26 +148,48 @@ document.addEventListener("DOMContentLoaded", () => {
     await peerConnection.addIceCandidate(candidate);
   });
 
-  socket.on("updateUserList", (users) => {
+  async function GetAllUsersConnectedFromDB() {
+    try {
+      const response = await fetch('/auth/getonlineusers');
+      if (!response.ok) {
+        throw new Error('Error fetching online users');
+      }
+      const onlineUsers = await response.json();
+      return onlineUsers;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+
+  socket.on("updateUserList", async (users) => {
     usersList.innerHTML = "";
+    const onlineUsers = await GetAllUsersConnectedFromDB();
+    console.log(onlineUsers)
+    // Loop through the onlineUsers array instead of users
     users.forEach((user) => {
       const listItem = document.createElement("li");
       listItem.classList.add("user-item");
       const avatarWrapper = document.createElement("div");
-      const avatar = document.createElement("i");
-      avatar.classList.add("material-icons");
-      avatar.textContent = "face";
+      const userDBObject = onlineUsers.filter(u => u.nickname === user.nickname)[0];
+      const avatar = document.createElement("img");
+      // Set the src attribute of the img element to user.profilePicture (assuming it's base64 encoded)
+      // avatar.src = userDBObject.profilePicture && userDBObject.profilePicture.startsWith("data:image/") ? userDBObject.profilePicture : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
+      avatar.style.width = '80px';
+      avatar.style.height = '80px';
+  
       avatarWrapper.appendChild(avatar);
       listItem.appendChild(avatarWrapper);
+  
       const userNameWrapper = document.createElement("div");
       const userName = document.createElement("span");
-      userName.textContent = user.socketId === socket.id ? "YOU" : user.nickname;
+      userName.textContent = user.nickname; // Since the user object contains the nickname directly
       userNameWrapper.appendChild(userName);
       listItem.appendChild(userNameWrapper);
+  
       usersList.appendChild(listItem);
     });
   });
-
   socket.on("receiveOffer", async (data) => {
     await peerConnection.setRemoteDescription(data.offer);
     const answer = await peerConnection.createAnswer();

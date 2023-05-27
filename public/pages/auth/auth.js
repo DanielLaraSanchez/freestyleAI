@@ -21,9 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Attach click event listeners
     loginBtn.addEventListener('click', async function () {
-        console.log('signup button clicked'); // Add this line
         if (document.cookie.indexOf("fRapsUser") !== -1) {
           document.cookie = 'fRapsUser=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+          console.log("user already logged in")
           return;
           }
         const nickname = document.getElementById('login-nickname').value;
@@ -64,21 +64,25 @@ document.addEventListener('DOMContentLoaded', function () {
       signupBtn.addEventListener('click', async function () {
         const nickname = document.getElementById('signup-nickname').value;
         const password = document.getElementById('signup-password').value;
-      
+        const profilePictureInput = document.getElementById('signup-profile-picture');
+        const profilePictureFile = profilePictureInput.files[0];
+
         if (nickname.trim() === '' || password.trim() === '') {
           M.toast({ html: 'Please enter a nickname and password.' });
           return;
         }
-      
+
+        const formData = new FormData();
+        formData.append('nickname', nickname);
+        formData.append('password', password);
+        formData.append('profilePicture', profilePictureFile);
+
         try {
           const response = await fetch('/auth/signup', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ nickname, password })
+            body: formData
           });
-      
+
           if (response.ok) {
             location.href = '/battlefield';
           } else {
@@ -88,5 +92,5 @@ document.addEventListener('DOMContentLoaded', function () {
         } catch (error) {
           M.toast({ html: 'Error: ' + error.message });
         }
-      });
+    });
 });

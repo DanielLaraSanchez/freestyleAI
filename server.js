@@ -13,6 +13,8 @@ const bcrypt = require("bcryptjs");
 const { setupSocketEvents, signalingEvents } = require("./signalingserver");
 const cookieParser = require("cookie-parser");
 app.use(cookieParser());
+const multer = require("multer");
+const upload = multer();
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
@@ -225,13 +227,13 @@ function redirectToAuthIfNotLoggedIn(req, res, next) {
   }
 }
 
-// app.get("/checkLoginStatus", (req, res) => {
-//   if (req.isAuthenticated()) {
-//     res.status(200).send({ loggedIn: true });
-//   } else {
-//     res.status(200).send({ loggedIn: false });
-//   }
-// });
+app.get("/checkLoginStatus", (req, res) => {
+  if (req.isAuthenticated()) {
+    res.status(200).send({ loggedIn: true });
+  } else {
+    res.status(200).send({ loggedIn: false });
+  }
+});
 
 app.get("/", (req, res) => {
   res.sendFile(
@@ -247,6 +249,34 @@ app.get("/landing-page", (req, res) => {
   res.sendFile(
     path.join(__dirname, "public/pages/landing-page", "landingPage.html")
   );
+});
+
+app.get("/auth/getonlineusers", async (req, res) => {
+  const db = client.db("f-raps-db");
+  const activeSessionsCollection = db.collection("ActiveSessions");
+  const usersCollection = db.collection("User");
+
+  try {
+    // Query the ActiveSessions collection to get the data
+    const activeSessions = await activeSessionsCollection.find({}).toArray();
+
+    // Extract the online users' nicknames from the activeSessions array
+    const onlineNicknames = activeSessions.map((session) => session.nickname);
+
+    // Fetch the corresponding nickname and profilePicture from the "User" collection for each online nickname
+    const onlineUsers = await usersCollection
+      .find(
+        { nickname: { $in: onlineNicknames } },
+        { projection: { _id: 0, password: 0 } }
+      )
+      .toArray();
+
+    // Send the online users array (with nickname and profilePicture) to the client
+    res.status(200).send(onlineUsers);
+  } catch (error) {
+    console.error("Error in /auth/getonlineusers:", error);
+    res.status(500).send("Server error");
+  }
 });
 
 app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
@@ -290,7 +320,6 @@ app.get("/signout", async (req, res) => {
 
 app.post("/auth/login", (req, res, next) => {
   const db = client.db("f-raps-db");
-  console.log("works");
   passport.authenticate("local", (err, user, info) => {
     if (err) {
       console.log("Error during authentication:", err);
@@ -333,59 +362,73 @@ app.post("/auth/login", (req, res, next) => {
   })(req, res, next);
 });
 
-app.post("/auth/signup", async (req, res, next) => {
-  const { nickname, password } = req.body;
-  const db = client.db("f-raps-db");
-  const usersCollection = db.collection("User");
-  const activeSessionsCollection = db.collection("ActiveSessions");
-  try {
-    const existingUser = await usersCollection.findOne({ nickname });
+app.post(
+  "/auth/signup",
+  upload.single("profilePicture"),
+  async (req, res, next) => {
+    const { nickname, password } = req.body;
+    const profilePicture = req.file ? req.file.buffer : null;
+    const profilePictureBase64 = profilePicture
+      ? profilePicture.toString("base64")
+      : null;
+    const db = client.db("f-raps-db");
+    const usersCollection = db.collection("User");
+    const activeSessionsCollection = db.collection("ActiveSessions");
 
-    // Check if the user is already logged in before signing up
-    const existingSession = await activeSessionsCollection.findOne({
-      nickname,
-    });
-    if (existingSession) {
-      return res.status(409).send("This user is already logged in");
-    }
+    try {
+      const existingUser = await usersCollection.findOne({ nickname });
 
-    if (existingUser) {
-      res.status(409).send("Nickname already in use");
-    } else {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await usersCollection.insertOne({ nickname, password: hashedPassword });
+      // Check if the user is already logged in before signing up
+      const existingSession = await activeSessionsCollection.findOne({
+        nickname,
+      });
 
-      passport.authenticate("local", (err, user) => {
-        if (err) {
-          return res.status(500).send("Server error");
-        }
-        if (!user) {
-          return res.status(401).send("Invalid nickname or password");
-        }
-        req.logIn(user, async (err) => {
+      if (existingSession) {
+        return res.status(409).send("This user is already logged in");
+      }
+
+      if (existingUser) {
+        res.status(409).send("Nickname already in use");
+      } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await usersCollection.insertOne({
+          nickname,
+          password: hashedPassword,
+          profilePicture: profilePictureBase64,
+        });
+
+        passport.authenticate("local", (err, user) => {
           if (err) {
             return res.status(500).send("Server error");
           }
-          req.session.loggedIn = true;
-          res.cookie("fRapsUser", user.nickname);
-          req.session.user = user;
+          if (!user) {
+            return res.status(401).send("Invalid nickname or password");
+          }
+          req.logIn(user, async (err) => {
+            if (err) {
+              return res.status(500).send("Server error");
+            }
+            req.session.loggedIn = true;
+            res.cookie("fRapsUser", user.nickname);
 
-          // Insert session information into ActiveSessions collection
-          await activeSessionsCollection.insertOne({
-            nickname: user.nickname,
-            sessionId: req.session.id,
+            req.session.user = user;
+
+            // Insert session information into ActiveSessions collection
+            await activeSessionsCollection.insertOne({
+              nickname: user.nickname,
+              sessionId: req.session.id,
+            });
+            console.log("User authenticated:", user.nickname);
+            return res.status(200).end();
           });
-          console.log("User authenticated:", user);
-          console.log("Session:", req.session);
-          return res.status(200).end();
-        });
-      })(req, res, next);
+        })(req, res, next);
+      }
+    } catch (error) {
+      console.error("Error in /auth/signup", error);
+      res.status(500).send("Server error");
     }
-  } catch (error) {
-    console.error("Error in /auth/signup", error);
-    res.status(500).send("Server error");
   }
-});
+);
 setupSocketEvents(io);
 
 const PORT = process.env.PORT || 3000;
