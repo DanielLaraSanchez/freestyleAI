@@ -2,99 +2,105 @@ const { EventEmitter } = require("events");
 const signalingEvents = new EventEmitter();
 
 function setupSocketEvents(io) {
-
   const waitingUsers = new Set();
   const users = [];
 
+  function handleChatMessage(socket, message) {
+    const nickname = socket.handshake.query.nickname;
+    const time = new Date();
+    console.log(message);
+
+    // Broadcast the chat message to all connected users
+    io.emit("chatMessage", { nickname, message, time });
+  }
+
+  function handleRequestOpponent(socket) {
+    waitingUsers.add(socket.id);
+
+    if (waitingUsers.size >= 2) {
+      let opponentSocketId = getRandomOpponent(waitingUsers);
+
+      while (opponentSocketId === socket.id) {
+        opponentSocketId = getRandomOpponent(waitingUsers);
+      }
+
+      waitingUsers.delete(socket.id);
+      waitingUsers.delete(opponentSocketId);
+
+      const roomId = `${socket.id}-${opponentSocketId}`;
+      socket.join(roomId);
+      io.sockets.sockets.get(opponentSocketId).join(roomId);
+
+      io.to(socket.id).emit("foundOpponent", {
+        socketId: opponentSocketId,
+        isInitiator: true,
+      });
+      io.to(opponentSocketId).emit("foundOpponent", {
+        socketId: socket.id,
+        isInitiator: false,
+      });
+    }
+  }
+
+  function handleSendOffer(socket, data) {
+    io.to(data.to).emit("receiveOffer", {
+      offer: data.offer,
+      from: socket.id,
+    });
+  }
+
+  function handleSendAnswer(socket, data) {
+    io.to(data.to).emit("receiveAnswer", {
+      answer: data.answer,
+      from: socket.id,
+    });
+  }
+
+  function handleSendIceCandidate(socket, data) {
+    io.to(data.to).emit("receiveIceCandidate", { candidate: data.candidate });
+  }
+
+  function handleLeaveRoom(socket) {
+    socket.rooms.forEach((roomId) => {
+      if (roomId !== socket.id) {
+        socket.leave(roomId);
+      }
+    });
+  }
+
+  function handleDisconnect(socket) {
+    const index = users.findIndex((user) => user.socketId === socket.id);
+    if (index > -1) {
+      signalingEvents.emit("userDisconnected", users[index].nickname);
+
+      users.splice(index, 1);
+    }
+    console.log("User disconnected:", socket.id);
+    waitingUsers.delete(socket.id);
+
+    io.emit("updateUserList", users);
+    handleLeaveRoom(socket);
+  }
+
+  function getRandomOpponent(users) {
+    const userList = Array.from(users);
+    return userList[Math.floor(Math.random() * userList.length)];
+  }
+
   io.on("connection", (socket) => {
     console.log("User connected: " + socket.id);
-    // Obtain the nickname from the socket.handshake.query
+
     const nickname = socket.handshake.query.nickname;
     users.push({ socketId: socket.id, nickname });
     io.emit("updateUserList", users);
-    socket.on("chatMessage", (message) => {
-      const nickname = socket.handshake.query.nickname;
-      const time = new Date();
-    console.log(message)
-      // Broadcast the chat message to all connected users
-      io.emit("chatMessage", { nickname, message, time });
-    });
-    socket.on("requestOpponent", () => {
-      waitingUsers.add(socket.id);
 
-      if (waitingUsers.size >= 2) {
-        let opponentSocketId = getRandomOpponent(waitingUsers);
-
-        while (opponentSocketId === socket.id) {
-          opponentSocketId = getRandomOpponent(waitingUsers);
-        }
-
-        waitingUsers.delete(socket.id);
-        waitingUsers.delete(opponentSocketId);
-
-        const roomId = `${socket.id}-${opponentSocketId}`;
-        socket.join(roomId);
-        io.sockets.sockets.get(opponentSocketId).join(roomId);
-
-        io.to(socket.id).emit("foundOpponent", {
-          socketId: opponentSocketId,
-          isInitiator: true,
-        });
-        io.to(opponentSocketId).emit("foundOpponent", {
-          socketId: socket.id,
-          isInitiator: false,
-        });
-      }
-    });
-
-    socket.on("sendOffer", (data) => {
-      io.to(data.to).emit("receiveOffer", {
-        offer: data.offer,
-        from: socket.id,
-      });
-    });
-
-    socket.on("sendAnswer", (data) => {
-      io.to(data.to).emit("receiveAnswer", {
-        answer: data.answer,
-        from: socket.id,
-      });
-    });
-
-    socket.on("sendIceCandidate", (data) => {
-      io.to(data.to).emit("receiveIceCandidate", { candidate: data.candidate });
-    });
-
-    socket.on("leaveRoom", () => {
-      socket.rooms.forEach((roomId) => {
-        if (roomId !== socket.id) {
-          socket.leave(roomId);
-        }
-      });
-    });
-
-    socket.on("disconnect", () => {
-      const index = users.findIndex((user) => user.socketId === socket.id);
-      if (index > -1) {
-        signalingEvents.emit("userDisconnected", users[index].nickname);
-
-        users.splice(index, 1);
-      }
-      console.log("User disconnected:", socket.id);
-      waitingUsers.delete(socket.id);
-
-      io.emit("updateUserList", users);
-      socket.rooms.forEach((roomId) => {
-        if (roomId !== socket.id) {
-          socket.leave(roomId);
-        }
-      });
-    });
-
-    function getRandomOpponent(users) {
-      const userList = Array.from(users);
-      return userList[Math.floor(Math.random() * userList.length)];
-    }
+    socket.on("chatMessage", (message) => handleChatMessage(socket, message));
+    socket.on("requestOpponent", () => handleRequestOpponent(socket));
+    socket.on("sendOffer", (data) => handleSendOffer(socket, data));
+    socket.on("sendAnswer", (data) => handleSendAnswer(socket, data));
+    socket.on("sendIceCandidate", (data) => handleSendIceCandidate(socket, data));
+    socket.on("leaveRoom", () => handleLeaveRoom(socket));
+    socket.on("disconnect", () => handleDisconnect(socket));
   });
 }
 
