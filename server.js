@@ -57,7 +57,7 @@ async function connectToMongoDB() {
   }
 }
 
-signalingEvents.on("userDisconnected", async (nickname) => {
+signalingEvents.on("userDisconnected", async (nickname, allUsers) => {
   console.log(`User ${nickname} disconnected from signaling server.`);
   const db = client.db("f-raps-db");
 
@@ -155,37 +155,11 @@ app.use((req, res, next) => {
   }
 });
 
-// Configure express-session middleware
-app.use(
-  session({
-    secret: "your-secret-key",
-    resave: false,
-    saveUninitialized: false, // should be false
-    // cookie: { secure: process.env.NODE_ENV === "production" }, // should only be secure in production environment
-  })
-);
-
-app.use((req, res, next) => {
-  if (
-    req.header("x-forwarded-proto") !== "https" &&
-    process.env.NODE_ENV === "production"
-  ) {
-    res.redirect(301, `https://${req.header("host")}${req.url}`);
-  } else {
-    next();
-  }
-});
-
 // Configure the session store
 const store = new MongoDBStore({
   uri: uri,
   collection: "sessions",
   clientPromise: client,
-});
-
-// Catch errors
-store.on("error", function (error) {
-  console.error("Session store error:", error);
 });
 
 // Configure express-session middleware
@@ -194,10 +168,16 @@ app.use(
     secret: "your-secret-key",
     resave: false,
     saveUninitialized: false,
-    store: store,
     cookie: { secure: process.env.NODE_ENV === "production" },
+    store: store, // Add this line
   })
 );
+
+// Catch errors
+store.on("error", function (error) {
+  console.error("Session store error:", error);
+});
+
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
@@ -219,6 +199,11 @@ app.use((req, res, next) => {
   );
 });
 
+app.use(function (req, res, next) {
+  console.log("User authentication status: ", req.isAuthenticated());
+  next();
+});
+
 function redirectToAuthIfNotLoggedIn(req, res, next) {
   if (req.isAuthenticated()) {
     next();
@@ -227,11 +212,21 @@ function redirectToAuthIfNotLoggedIn(req, res, next) {
   }
 }
 
-app.get("/checkLoginStatus", (req, res) => {
-  if (req.isAuthenticated()) {
-    res.status(200).send({ loggedIn: true });
+async function getActiveSessionByNickName(nickname) {
+  const db = client.db("f-raps-db");
+  const activeSessionsCollection = db.collection("ActiveSessions");
+
+  return await activeSessionsCollection.findOne({ nickname });
+}
+
+app.get("/auth/check-nickname/:nickname", async (req, res) => {
+  const nickname = req.params.nickname;
+  const existingSession = await getActiveSessionByNickName(nickname);
+  console.log(existingSession, "existing session");
+  if (existingSession) {
+    res.status(200).send({ isLoggedIn: true });
   } else {
-    res.status(200).send({ loggedIn: false });
+    res.status(200).send({ isLoggedIn: false });
   }
 });
 
@@ -259,7 +254,6 @@ app.get("/auth/getonlineusers", async (req, res) => {
   try {
     // Query the ActiveSessions collection to get the data
     const activeSessions = await activeSessionsCollection.find({}).toArray();
-
     // Extract the online users' nicknames from the activeSessions array
     const onlineNicknames = activeSessions.map((session) => session.nickname);
 
@@ -280,20 +274,28 @@ app.get("/auth/getonlineusers", async (req, res) => {
 });
 
 app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated() && req.session.loggedIn) {
     const db = client.db("f-raps-db");
     const activeSessionsCollection = db.collection("ActiveSessions");
 
     const existingSession = await activeSessionsCollection.findOne({
       nickname: req.user.nickname,
     });
-    if (existingSession && existingSession.sessionId !== req.session.id) {
-      console.log("");
-      res.redirect("/auth");
-    } else {
+
+    if (
+      existingSession &&
+      existingSession.sessionId === req.session.id &&
+      existingSession.loginTimestamp === req.session.loginTimestamp // Add this condition
+    ) {
       res.sendFile(
-        path.join(__dirname, "public/pages/battlefield", "battlefield.html")
+        path.join(
+          __dirname,
+          "public/pages/battlefield",
+          "battlefield.html"
+        )
       );
+    } else {
+      res.redirect("/auth");
     }
   } else {
     res.redirect("/auth");
@@ -301,7 +303,6 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
 });
 
 app.get("/signout", async (req, res) => {
-  console.log("logout works");
   const db = client.db("f-raps-db");
   const activeSessionsCollection = db.collection("ActiveSessions");
 
@@ -345,16 +346,16 @@ app.post("/auth/login", (req, res, next) => {
 
       console.log("Login successful");
       req.session.loggedIn = true;
-      // res.cookie("fRapsUser", { nickname: user.nickname });
-      res.cookie("fRapsUser", user.nickname);
-
       req.session.user = user;
+      req.session.loginTimestamp = new Date().toISOString(); // Add this line
 
+      res.cookie("fRapsUser", user.nickname);
       // Insert session information into ActiveSessions collection
       const activeSessionsCollection = db.collection("ActiveSessions");
       await activeSessionsCollection.insertOne({
         nickname: user.nickname,
         sessionId: req.session.id,
+        loginTimestamp: req.session.loginTimestamp
       });
 
       return res.status(200).end();

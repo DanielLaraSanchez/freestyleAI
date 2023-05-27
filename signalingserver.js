@@ -71,8 +71,7 @@ function setupSocketEvents(io) {
   function handleDisconnect(socket) {
     const index = users.findIndex((user) => user.socketId === socket.id);
     if (index > -1) {
-      signalingEvents.emit("userDisconnected", users[index].nickname);
-
+      signalingEvents.emit("userDisconnected", users[index].nickname, users);
       users.splice(index, 1);
     }
     console.log("User disconnected:", socket.id);

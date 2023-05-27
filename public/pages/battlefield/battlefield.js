@@ -1,23 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
- 
-  async function checkIfUserConnected() {
-    try {
-      const response = await fetch('/checkLoginStatus');
-      if (response.ok) {
-        const responseData = await response.json();
-        // If user is not logged in, redirect them to the auth route
-        if (!responseData.loggedIn) {
-          // Cancel page unload
-          e.preventDefault();
-          // Redirect the user to the auth route
-          window.location.replace('/auth');
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching auth status:', error);
-    }
-  };
-
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
   const remoteVideoContainer = document.querySelector(
@@ -151,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function GetAllUsersConnectedFromDB() {
     try {
       const response = await fetch('/auth/getonlineusers');
+      console.log(response)
       if (!response.ok) {
         throw new Error('Error fetching online users');
       }
@@ -165,16 +147,15 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("updateUserList", async (users) => {
     usersList.innerHTML = "";
     const onlineUsers = await GetAllUsersConnectedFromDB();
-    console.log(onlineUsers)
     // Loop through the onlineUsers array instead of users
-    users.forEach((user) => {
+    onlineUsers.forEach((user) => {
       const listItem = document.createElement("li");
       listItem.classList.add("user-item");
       const avatarWrapper = document.createElement("div");
       const userDBObject = onlineUsers.filter(u => u.nickname === user.nickname)[0];
       const avatar = document.createElement("img");
       // Set the src attribute of the img element to user.profilePicture (assuming it's base64 encoded)
-      // avatar.src = userDBObject.profilePicture && userDBObject.profilePicture.startsWith("data:image/") ? userDBObject.profilePicture : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
+      avatar.src = userDBObject.profilePicture && userDBObject.profilePicture.startsWith("data:image/") ? userDBObject.profilePicture : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
       avatar.style.width = '80px';
       avatar.style.height = '80px';
   
