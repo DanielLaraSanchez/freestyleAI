@@ -144,16 +144,16 @@ passport.deserializeUser(async (nickname, done) => {
   }
 });
 
-app.use((req, res, next) => {
-  if (
-    req.header("x-forwarded-proto") !== "https" &&
-    process.env.NODE_ENV === "production"
-  ) {
-    res.redirect(301, `https://${req.header("host")}${req.url}`);
-  } else {
-    next();
-  }
-});
+// app.use((req, res, next) => {
+//   if (
+//     req.header("x-forwarded-proto") !== "https" &&
+//     process.env.NODE_ENV === "production"
+//   ) {
+//     res.redirect(301, `https://${req.header("host")}${req.url}`);
+//   } else {
+//     next();
+//   }
+// });
 
 // Configure the session store
 const store = new MongoDBStore({
