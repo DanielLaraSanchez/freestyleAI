@@ -1,8 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  //**********************************************
-  // REFERENCE DOM ELEMENTS AND SOCKET CONNECTION
-  //**********************************************
-
+  
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
   const remoteVideoContainer = document.querySelector(".remote-video-container");
