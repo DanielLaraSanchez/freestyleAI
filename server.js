@@ -1,7 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const session = require("express-session");
-
 const path = require("path");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const MongoDBStore = require("connect-mongodb-session")(session);
@@ -27,6 +26,7 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
 async function logoutUserByNickname(nickname, userSessionId) {
   try {
     const db = client.db("f-raps-db");
@@ -79,12 +79,11 @@ const setMimeTypes = (res, filePath) => {
     res.setHeader("Content-Type", "application/javascript");
   }
 };
-// Configure Passport.js
+
 passport.use(
   new LocalStrategy(
     { usernameField: "nickname", passwordField: "password" },
     async (nickname, password, done) => {
-      // Check for existing sessions
       const db = client.db("f-raps-db");
       const activeSessionsCollection = db.collection("ActiveSessions");
 
@@ -92,35 +91,35 @@ passport.use(
         nickname,
       });
       if (existingSession) {
-        return done(null, false, { message: "User already logged in" }); // Active session detected
+        return done(null, false, { message: "User already logged in" });
       }
-      // Add user authentication logic
+
       const usersCollection = db.collection("User");
 
       try {
         const user = await usersCollection.findOne({ nickname });
         if (user) {
-          // Check if password is correct using bcrypt
           const isPasswordCorrect = await bcrypt.compare(
             password,
             user.password
           );
 
           if (isPasswordCorrect) {
-            user.active = true; // Add this line
-            done(null, user); // Success
+            user.active = true;
+            done(null, user);
           } else {
-            done(null, false, { message: "Incorrect password" }); // Incorrect password
+            done(null, false, { message: "Incorrect password" });
           }
         } else {
-          done(null, false, { message: "User not found" }); // User not found
+          done(null, false, { message: "User not found" });
         }
       } catch (error) {
-        done(error); // Error during authentication
+        done(error);
       }
     }
   )
 );
+
 passport.serializeUser((user, done) => {
   done(null, user.nickname);
 });
@@ -153,58 +152,30 @@ app.use((req, res, next) => {
   }
 });
 
-// Configure express-session middleware
-app.use(
-  session({
-    secret: "your-secret-key",
-    resave: false,
-    saveUninitialized: false, // should be false
-    // cookie: { secure: process.env.NODE_ENV === "production" }, // should only be secure in production environment
-  })
-);
-
-app.use((req, res, next) => {
-  if (
-    req.header("x-forwarded-proto") !== "https" &&
-    process.env.NODE_ENV === "production"
-  ) {
-    res.redirect(301, `https://${req.header("host")}${req.url}`);
-  } else {
-    next();
-  }
-});
-
-// Configure the session store
-const store = new MongoDBStore({
+const mongoStoreOptions = {
   uri: uri,
   collection: "sessions",
   clientPromise: client,
-});
+};
 
-// Catch errors
+const sessionOptions = {
+  secret: "your-secret-key",
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === "production" },
+};
+
+const store = new MongoDBStore(mongoStoreOptions);
+
 store.on("error", function (error) {
   console.error("Session store error:", error);
 });
 
-// Configure express-session middleware
-app.use(
-  session({
-    secret: "your-secret-key",
-    resave: false,
-    saveUninitialized: false,
-    store: store,
-    cookie: { secure: process.env.NODE_ENV === "production" },
-  })
-);
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  } else {
-    res.redirect("/auth");
-  }
-}
+sessionOptions.store = store;
 
-// Initialize Passport.js middleware
+const sessionMiddleware = session(sessionOptions);
+
+app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -224,14 +195,6 @@ function redirectToAuthIfNotLoggedIn(req, res, next) {
     res.redirect("/auth");
   }
 }
-
-// app.get("/checkLoginStatus", (req, res) => {
-//   if (req.isAuthenticated()) {
-//     res.status(200).send({ loggedIn: true });
-//   } else {
-//     res.status(200).send({ loggedIn: false });
-//   }
-// });
 
 app.get("/", (req, res) => {
   res.sendFile(
@@ -258,7 +221,6 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
       nickname: req.user.nickname,
     });
     if (existingSession && existingSession.sessionId !== req.session.id) {
-      console.log("");
       res.redirect("/auth");
     } else {
       res.sendFile(
@@ -271,63 +233,49 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
 });
 
 app.get("/signout", async (req, res) => {
-  console.log("logout works");
   const db = client.db("f-raps-db");
   const activeSessionsCollection = db.collection("ActiveSessions");
 
   await activeSessionsCollection.deleteOne({ sessionId: req.session.id });
 
-  // Add this line - clear the session cookie
   res.clearCookie("connect.sid", { path: "/" });
 
   req.logout(() => {
-    // Add this callback function
     req.session.loggedIn = false;
-    req.session.destroy(); // Destroy the session
+    req.session.destroy();
     res.redirect("/auth");
   });
 });
 
 app.post("/auth/login", (req, res, next) => {
   const db = client.db("f-raps-db");
-  console.log("works");
+
   passport.authenticate("local", (err, user, info) => {
     if (err) {
-      console.log("Error during authentication:", err);
       return res.status(500).send("Server error");
     }
     if (!user) {
       if (info && info.message) {
-        // Send the custom message from the LocalStrategy
         return res.status(401).send(info.message);
       } else {
-        console.log("No user found");
         return res.status(401).send("Invalid nickname or password");
       }
     }
 
-    console.log("User found:", user);
-
     req.logIn(user, async (err) => {
       if (err) {
-        console.log("Error during logIn:", err);
         return res.status(500).send("Server error");
       }
 
-      console.log("Login successful");
       req.session.loggedIn = true;
-      // res.cookie("fRapsUser", { nickname: user.nickname });
       res.cookie("fRapsUser", user.nickname);
-
       req.session.user = user;
 
-      // Insert session information into ActiveSessions collection
       const activeSessionsCollection = db.collection("ActiveSessions");
       await activeSessionsCollection.insertOne({
         nickname: user.nickname,
         sessionId: req.session.id,
       });
-
       return res.status(200).end();
     });
   })(req, res, next);
@@ -338,13 +286,13 @@ app.post("/auth/signup", async (req, res, next) => {
   const db = client.db("f-raps-db");
   const usersCollection = db.collection("User");
   const activeSessionsCollection = db.collection("ActiveSessions");
+
   try {
     const existingUser = await usersCollection.findOne({ nickname });
-
-    // Check if the user is already logged in before signing up
     const existingSession = await activeSessionsCollection.findOne({
       nickname,
     });
+
     if (existingSession) {
       return res.status(409).send("This user is already logged in");
     }
@@ -370,11 +318,12 @@ app.post("/auth/signup", async (req, res, next) => {
           res.cookie("fRapsUser", user.nickname);
           req.session.user = user;
 
-          // Insert session information into ActiveSessions collection
+          const activeSessionsCollection = db.collection("ActiveSessions");
           await activeSessionsCollection.insertOne({
             nickname: user.nickname,
             sessionId: req.session.id,
           });
+
           console.log("User authenticated:", user);
           console.log("Session:", req.session);
           return res.status(200).end();
@@ -386,6 +335,7 @@ app.post("/auth/signup", async (req, res, next) => {
     res.status(500).send("Server error");
   }
 });
+
 setupSocketEvents(io);
 
 const PORT = process.env.PORT || 3000;
