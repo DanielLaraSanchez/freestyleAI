@@ -132,7 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
   async function GetAllUsersConnectedFromDB() {
     try {
       const response = await fetch('/auth/getonlineusers');
-      console.log(response)
       if (!response.ok) {
         throw new Error('Error fetching online users');
       }
