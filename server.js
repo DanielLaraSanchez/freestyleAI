@@ -322,14 +322,7 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
     }
   } else {
     // Redirect to the login or another error page when referrer does not match
-    res.sendFile(
-      path.join(
-        __dirname,
-        "public/pages/battlefield",
-        "battlefield.html"
-      )
-    );
-    // res.redirect("/auth");
+    res.redirect("/auth");
   }
 });
 
