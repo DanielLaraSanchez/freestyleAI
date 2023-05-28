@@ -74,6 +74,7 @@ function setupSocketEvents(io) {
       signalingEvents.emit("userDisconnected", users[index].nickname, users);
       users.splice(index, 1);
     }
+    socket.broadcast.emit("userDisconnected", socket.id);
     console.log("User disconnected:", socket.id);
     waitingUsers.delete(socket.id);
 

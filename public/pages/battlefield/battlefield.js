@@ -1,4 +1,7 @@
+import { wordList } from "./utilities/words.js";
+
 document.addEventListener("DOMContentLoaded", () => {
+  console.log(wordList);
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
   const remoteVideoContainer = document.querySelector(
@@ -118,11 +121,15 @@ document.addEventListener("DOMContentLoaded", () => {
       startCountdown(10);
     }
     socket.on("userDisconnected", (disconnectedSocketId) => {
+      console.log("works")
       if (opponentSocketId === disconnectedSocketId) {
         endRapBattle();
       }
     });
+
   });
+
+
 
   socket.on("receiveIceCandidate", async (data) => {
     const candidate = new RTCIceCandidate(data.candidate);
@@ -131,9 +138,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function GetAllUsersConnectedFromDB() {
     try {
-      const response = await fetch('/auth/getonlineusers');
+      const response = await fetch("/auth/getonlineusers");
       if (!response.ok) {
-        throw new Error('Error fetching online users');
+        throw new Error("Error fetching online users");
       }
       const onlineUsers = await response.json();
       return onlineUsers;
@@ -141,7 +148,6 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error(error);
     }
   }
-
 
   socket.on("updateUserList", async (users) => {
     usersList.innerHTML = "";
@@ -151,22 +157,28 @@ document.addEventListener("DOMContentLoaded", () => {
       const listItem = document.createElement("li");
       listItem.classList.add("user-item");
       const avatarWrapper = document.createElement("div");
-      const userDBObject = onlineUsers.filter(u => u.nickname === user.nickname)[0];
+      const userDBObject = onlineUsers.filter(
+        (u) => u.nickname === user.nickname
+      )[0];
       const avatar = document.createElement("img");
       // Set the src attribute of the img element to user.profilePicture (assuming it's base64 encoded)
-      avatar.src = userDBObject.profilePicture && userDBObject.profilePicture.startsWith("data:image/") ? userDBObject.profilePicture : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
-      avatar.style.width = '80px';
-      avatar.style.height = '80px';
-  
+      avatar.src =
+        userDBObject.profilePicture &&
+        userDBObject.profilePicture.startsWith("data:image/")
+          ? userDBObject.profilePicture
+          : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
+      avatar.style.width = "80px";
+      avatar.style.height = "80px";
+
       avatarWrapper.appendChild(avatar);
       listItem.appendChild(avatarWrapper);
-  
+
       const userNameWrapper = document.createElement("div");
       const userName = document.createElement("span");
       userName.textContent = user.nickname; // Since the user object contains the nickname directly
       userNameWrapper.appendChild(userName);
       listItem.appendChild(userNameWrapper);
-  
+
       usersList.appendChild(listItem);
     });
   });
