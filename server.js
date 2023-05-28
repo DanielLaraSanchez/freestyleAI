@@ -315,7 +315,7 @@ console.log(referer, expectedReferer, "asldfdheHERELKJRELWKRJSDALKFLKDKDDKKD")
       )
     );
     // Redirect to the login or another error page when referrer does not match
-    // res.redirect("/auth");
+    res.redirect("/auth");
   }
 });
 
