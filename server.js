@@ -277,7 +277,7 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const referer = req.header("Referer");
   const expectedReferer =
     req.protocol + "://" + req.header("host") + "/auth";
-
+console.log(referer, expectedReferer, "asldfdheHERELKJRELWKRJSDALKFLKDKDDKKD")
   if (referer === expectedReferer) {
     // Existing code for handling the battlefield request
     if (req.isAuthenticated() && req.session.loggedIn) {
