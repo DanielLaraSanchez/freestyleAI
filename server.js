@@ -140,7 +140,7 @@ passport.deserializeUser(async (nickname, done) => {
     if (user) {
       done(null, user);
     } else {
-      done(new Error("User not found"), null);
+      // done(new Error("User not found"), null);
     }
   } catch (error) {
     done(error, null);
