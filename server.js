@@ -307,13 +307,6 @@ console.log(referer, expectedReferer, "asldfdheHERELKJRELWKRJSDALKFLKDKDDKKD")
       res.redirect("/auth");
     }
   } else {
-    res.sendFile(
-      path.join(
-        __dirname,
-        "public/pages/battlefield",
-        "battlefield.html"
-      )
-    );
     // Redirect to the login or another error page when referrer does not match
     res.redirect("/auth");
   }
