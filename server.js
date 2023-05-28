@@ -275,8 +275,9 @@ app.get("/auth/getonlineusers", async (req, res) => {
 
 app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const referer = req.header("Referer");
+  const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
   const expectedReferer =
-    req.protocol + "://" + req.header("host") + "/auth";
+    protocol + "://" + req.header("host") + "/auth";
 console.log(referer, expectedReferer, "asldfdheHERELKJRELWKRJSDALKFLKDKDDKKD")
   if (referer === expectedReferer) {
     // Existing code for handling the battlefield request
