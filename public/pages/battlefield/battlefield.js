@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatMessagesContainer = document.querySelector(
     ".chat-messages-container"
   );
+  const readyBtn = document.getElementById("ready-btn");
 
   let opponentSocketId = null;
   let isInitiator = false;
@@ -105,6 +106,13 @@ document.addEventListener("DOMContentLoaded", () => {
       socket.emit("chatMessage", chatInput.value);
       chatInput.value = "";
     }
+  });
+
+  // Add a click event listener for the ready button
+  readyBtn.addEventListener("click", () => {
+    setTimeout(() => {
+      endRapBattle();
+    }, 30000);
   });
 
   // Socket.io events
