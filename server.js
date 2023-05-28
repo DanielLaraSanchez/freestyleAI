@@ -168,7 +168,7 @@ app.use(
     secret: "your-secret-key",
     resave: false,
     saveUninitialized: false,
-    // cookie: { secure: process.env.NODE_ENV === "production" },
+    cookie: { secure: process.env.NODE_ENV === "production" },
     store: store, // Add this line
   })
 );
