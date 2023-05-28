@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let opponentSocketId = null;
   let isInitiator = false;
+  let opponentReady = false;
 
   // WebRTC related
   const configuration = {
@@ -108,16 +109,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Add a click event listener for the ready button
+  // Modify the readyBtn click event listener
   readyBtn.addEventListener("click", () => {
-    setTimeout(() => {
-      endRapBattle();
-    }, 30000);
+    console.log("its being called here before user clicks")
+    readyBtn.disabled = true;
+    if (opponentReady) {
+      // setTimeout(() => {
+      //   endRapBattle();
+      // }, 10000);
+      socket.emit("readyButtonClicked", opponentSocketId);
+     orquestrateBattle();
+      console.log("here the action starts 1");
+    } else {
+      opponentReady = true;
+      socket.emit("readyButtonClicked", opponentSocketId);
+    }
   });
 
   // Socket.io events
   socket.on("connect", () => {
     console.log("Connected to server");
+  });
+
+  socket.on("opponentReady", () => {
+    console.log("here the action starts 2", opponentReady);
+    if (opponentReady) {
+    orquestrateBattle();
+    }
+    opponentReady = true;
   });
 
   socket.on("foundOpponent", (data) => {
@@ -231,6 +250,43 @@ document.addEventListener("DOMContentLoaded", () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
+function orquestrateBattle() {
+  startCountdown(10);
+        setTimeout(() => {
+          displayRandomWord();
+          startStopWatch();
+      }, 10000);
+      setTimeout(() => {
+      endRapBattle();
+    }, 60000);
+}
+
+function startStopWatch() {
+  const timerDiv = document.getElementById("timer");
+  let secondsLeft = 60;
+  
+  const countdown = setInterval(function() {
+    timerDiv.textContent = secondsLeft;
+    
+    if (secondsLeft === 0) {
+      clearInterval(countdown);
+    } else {
+      secondsLeft--;
+    }
+  }, 1000);
+
+}
+
+  function displayRandomWord() {
+    const wordsDiv = document.getElementById("words");
+    while (wordsDiv.firstChild) {
+      wordsDiv.removeChild(wordsDiv.firstChild);
+    }
+    const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
+    const h3 = document.createElement("h3");
+    h3.textContent = randomWord;
+    wordsDiv.appendChild(h3);
+  }
 
   function getCookieValue(name) {
     const matchedCookie = document.cookie.match(new RegExp(name + "=([^;]+)"));
@@ -247,6 +303,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return null;
     }
   }
+
+  let count = 0;
+  const intervalId = setInterval(() => {
+    count++;
+    if (count === 6) {
+      clearInterval(intervalId);
+    }
+  }, 10000);
 
   function startMediaCapture() {
     return new Promise(async (resolve, reject) => {
@@ -297,6 +361,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function endRapBattle() {
+    if (readyBtn.disabled === true) readyBtn.disabled = false;
+    opponentReady = false;
     if (opponentSocketId !== null) {
       socket.emit("endConnection", opponentSocketId);
     }

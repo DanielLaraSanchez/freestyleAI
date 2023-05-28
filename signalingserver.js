@@ -86,6 +86,10 @@ function setupSocketEvents(io) {
     handleLeaveRoom(socket);
   }
 
+  function handleReadyButtonClicked(socket, opponentSocketId) {
+    io.to(opponentSocketId).emit("opponentReady");
+  }
+
   function getRandomOpponent(users) {
     const userList = Array.from(users);
     return userList[Math.floor(Math.random() * userList.length)];
@@ -106,6 +110,7 @@ function setupSocketEvents(io) {
     socket.on("leaveRoom", () => handleLeaveRoom(socket));
     socket.on("disconnect", () => handleDisconnect(socket));
     socket.on("endConnection", (opponentSocketId) => handleCloseConnection(socket, opponentSocketId));
+    socket.on("readyButtonClicked", (opponentSocketId) => handleReadyButtonClicked(socket, opponentSocketId));
 
   });
 }
