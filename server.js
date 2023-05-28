@@ -199,10 +199,10 @@ app.use((req, res, next) => {
   );
 });
 
-app.use(function (req, res, next) {
-  console.log("User authentication status: ", req.isAuthenticated());
-  next();
-});
+// app.use(function (req, res, next) {
+//   console.log("User authentication status: ", req.isAuthenticated());
+//   next();
+// });
 
 function redirectToAuthIfNotLoggedIn(req, res, next) {
   if (req.isAuthenticated()) {
@@ -222,7 +222,6 @@ async function getActiveSessionByNickName(nickname) {
 app.get("/auth/check-nickname/:nickname", async (req, res) => {
   const nickname = req.params.nickname;
   const existingSession = await getActiveSessionByNickName(nickname);
-  console.log(existingSession, "existing session");
   if (existingSession) {
     res.status(200).send({ isLoggedIn: true });
   } else {
@@ -278,7 +277,6 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
   const expectedReferer =
     protocol + "://" + req.header("host") + "/auth";
-console.log(referer, expectedReferer, "asldfdheHERELKJRELWKRJSDALKFLKDKDDKKD")
   if (referer === expectedReferer) {
     // Existing code for handling the battlefield request
     if (req.isAuthenticated() && req.session.loggedIn) {
@@ -346,8 +344,6 @@ app.post("/auth/login", (req, res, next) => {
         return res.status(401).send("Invalid nickname or password");
       }
     }
-
-    console.log("User found:", user);
 
     req.logIn(user, async (err) => {
       if (err) {

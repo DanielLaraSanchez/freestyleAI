@@ -117,19 +117,13 @@ document.addEventListener("DOMContentLoaded", () => {
     isInitiator = data.isInitiator;
 
     initiateWebRTCConnection(isInitiator);
-    if (isInitiator) {
-      startCountdown(10);
-    }
     socket.on("userDisconnected", (disconnectedSocketId) => {
-      console.log("works")
+      console.log("works");
       if (opponentSocketId === disconnectedSocketId) {
         endRapBattle();
       }
     });
-
   });
-
-
 
   socket.on("receiveIceCandidate", async (data) => {
     const candidate = new RTCIceCandidate(data.candidate);
@@ -197,6 +191,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("endRapBattle", () => {
+    endRapBattle();
+  });
+
+  socket.on("endConnection", () => {
     endRapBattle();
   });
 
@@ -291,6 +289,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function endRapBattle() {
+    if (opponentSocketId !== null) {
+      socket.emit("endConnection", opponentSocketId);
+    }
     socket.off("userDisconnected");
     if (localVideo.srcObject) {
       localVideo.srcObject.getTracks().forEach((track) => track.stop());

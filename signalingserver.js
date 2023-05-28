@@ -68,6 +68,10 @@ function setupSocketEvents(io) {
     });
   }
 
+  function handleCloseConnection(socket, opponentSocketId) {
+    socket.broadcast.to(opponentSocketId).emit("endConnection");
+  }
+
   function handleDisconnect(socket) {
     const index = users.findIndex((user) => user.socketId === socket.id);
     if (index > -1) {
@@ -101,6 +105,8 @@ function setupSocketEvents(io) {
     socket.on("sendIceCandidate", (data) => handleSendIceCandidate(socket, data));
     socket.on("leaveRoom", () => handleLeaveRoom(socket));
     socket.on("disconnect", () => handleDisconnect(socket));
+    socket.on("endConnection", (opponentSocketId) => handleCloseConnection(socket, opponentSocketId));
+
   });
 }
 
