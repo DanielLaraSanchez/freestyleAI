@@ -128,6 +128,9 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser(async (nickname, done) => {
+  if (!nickname) {
+    return done(null, null);
+  }
   const db = client.db("f-raps-db");
   const usersCollection = db.collection("User");
 
