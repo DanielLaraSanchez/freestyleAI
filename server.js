@@ -128,9 +128,6 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser(async (nickname, done) => {
-  if (!nickname) {
-    return done(null, null);
-  }
   const db = client.db("f-raps-db");
   const usersCollection = db.collection("User");
 
@@ -140,7 +137,7 @@ passport.deserializeUser(async (nickname, done) => {
     if (user) {
       done(null, user);
     } else {
-      // done(new Error("User not found"), null);
+      done(new Error("User not found"), null);
     }
   } catch (error) {
     done(error, null);
@@ -310,15 +307,8 @@ console.log(referer, expectedReferer, "asldfdheHERELKJRELWKRJSDALKFLKDKDDKKD")
       res.redirect("/auth");
     }
   } else {
-    res.sendFile(
-      path.join(
-        __dirname,
-        "public/pages/battlefield",
-        "battlefield.html"
-      )
-    );
     // Redirect to the login or another error page when referrer does not match
-    // res.redirect("/auth");
+    res.redirect("/auth");
   }
 });
 
