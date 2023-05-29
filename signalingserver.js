@@ -86,6 +86,11 @@ function setupSocketEvents(io) {
     handleLeaveRoom(socket);
   }
 
+  function handleSendWordsToOponent(opponentSocketId, words) {
+    console.log(words)
+    io.to(opponentSocketId).emit("receiveWordsForBattle", words)
+  }
+
   function handleReadyButtonClicked(socket, opponentSocketId) {
     io.to(opponentSocketId).emit("opponentReady");
   }
@@ -111,6 +116,8 @@ function setupSocketEvents(io) {
     socket.on("disconnect", () => handleDisconnect(socket));
     socket.on("endConnection", (opponentSocketId) => handleCloseConnection(socket, opponentSocketId));
     socket.on("readyButtonClicked", (opponentSocketId) => handleReadyButtonClicked(socket, opponentSocketId));
+    socket.on("sendWordsToOponent", (data) => handleSendWordsToOponent(data.to, data.words));
+
 
   });
 }
