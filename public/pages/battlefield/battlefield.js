@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ".chat-messages-container"
   );
   const readyBtn = document.getElementById("ready-btn");
+  readyBtn.style.display = "none";
 
   let opponentSocketId = null;
   let isInitiator = false;
@@ -585,6 +586,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function initiateWebRTCConnection(createOffer) {
+    readyBtn.style.display = "inline-block";
+
     if (createOffer) {
       peerConnection
         .createOffer()
