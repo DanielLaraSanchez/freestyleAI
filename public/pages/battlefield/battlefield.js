@@ -229,6 +229,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.on("chatMessage", (data) => {
     const messageElement = document.createElement("div");
     messageElement.classList.add("chat-message");
+    // Add styles
+    messageElement.style.backgroundColor = "lightblue";
+    messageElement.style.padding = "14px";
+    messageElement.style.borderBottomRightRadius = "10px";
+    messageElement.style.borderTopRightRadius = "10px";
+    messageElement.style.borderTopLeftRadius = "10px";
+    messageElement.style.marginBottom = "8px";
+    messageElement.style.fontWeight = "600";
     const timeStamp = new Date(data.time).toLocaleString("en-US", {
       hour: "numeric",
       minute: "numeric",
@@ -236,8 +244,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     messageElement.innerHTML = `
           <div class="chat-message-info">
-            <span class="chat-message-sender">${data.nickname}</span>
-            <span class="chat-message-time">${timeStamp}</span>
+            <span style="font-size: small; margin-right:5px; font-weight:400;color: #505661;" class="chat-message-sender">${data.nickname}</span>
+            <span  style="font-size: small; font-weight:400;color: #505661;" class="chat-message-time">${timeStamp}</span>
           </div>
           <div class="chat-message-text">${data.message}</div>
         `;
