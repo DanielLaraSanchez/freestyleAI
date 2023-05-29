@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
       //   endRapBattle();
       // }, 10000);
       socket.emit("readyButtonClicked", opponentSocketId);
-     orquestrateBattle();
+      orquestrateBattle();
       console.log("here the action starts 1");
     } else {
       opponentReady = true;
@@ -134,7 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("opponentReady", () => {
     console.log("here the action starts 2", opponentReady);
     if (opponentReady) {
-    orquestrateBattle();
+      orquestrateBattle();
     }
     opponentReady = true;
   });
@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Set the src attribute of the img element to user.profilePicture (assuming it's base64 encoded)
       avatar.src =
         userDBObject.profilePicture &&
-        userDBObject.profilePicture.startsWith("data:image/")
+          userDBObject.profilePicture.startsWith("data:image/")
           ? userDBObject.profilePicture
           : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
       avatar.style.width = "80px";
@@ -228,6 +228,14 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("chatMessage", (data) => {
     const messageElement = document.createElement("div");
     messageElement.classList.add("chat-message");
+    // Add styles
+    messageElement.style.backgroundColor = "lightblue";
+    messageElement.style.padding = "14px";
+    messageElement.style.borderBottomRightRadius = "10px";
+    messageElement.style.borderTopRightRadius = "10px";
+    messageElement.style.borderTopLeftRadius = "10px";
+    messageElement.style.marginBottom = "8px";
+    messageElement.style.fontWeight = "600";
     const timeStamp = new Date(data.time).toLocaleString("en-US", {
       hour: "numeric",
       minute: "numeric",
@@ -235,8 +243,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     messageElement.innerHTML = `
           <div class="chat-message-info">
-            <span class="chat-message-sender">${data.nickname}</span>
-            <span class="chat-message-time">${timeStamp}</span>
+            <span style="font-size: small; margin-right:5px; font-weight:400;color: #505661;" class="chat-message-sender">${data.nickname}</span>
+            <span  style="font-size: small; font-weight:400;color: #505661;" class="chat-message-time">${timeStamp}</span>
           </div>
           <div class="chat-message-text">${data.message}</div>
         `;
@@ -250,32 +258,32 @@ document.addEventListener("DOMContentLoaded", () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
-function orquestrateBattle() {
-  startCountdown(10);
-        setTimeout(() => {
-          displayRandomWord();
-          startStopWatch();
-      }, 10000);
-      setTimeout(() => {
+  function orquestrateBattle() {
+    startCountdown(10);
+    setTimeout(() => {
+      displayRandomWord();
+      startStopWatch();
+    }, 10000);
+    setTimeout(() => {
       endRapBattle();
     }, 60000);
-}
+  }
 
-function startStopWatch() {
-  const timerDiv = document.getElementById("timer");
-  let secondsLeft = 60;
-  
-  const countdown = setInterval(function() {
-    timerDiv.textContent = secondsLeft;
-    
-    if (secondsLeft === 0) {
-      clearInterval(countdown);
-    } else {
-      secondsLeft--;
-    }
-  }, 1000);
+  function startStopWatch() {
+    const timerDiv = document.getElementById("timer");
+    let secondsLeft = 60;
 
-}
+    const countdown = setInterval(function () {
+      timerDiv.textContent = secondsLeft;
+
+      if (secondsLeft === 0) {
+        clearInterval(countdown);
+      } else {
+        secondsLeft--;
+      }
+    }, 1000);
+
+  }
 
   function displayRandomWord() {
     const wordsDiv = document.getElementById("words");
