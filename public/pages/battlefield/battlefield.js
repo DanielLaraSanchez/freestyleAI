@@ -117,25 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     readyBtn.disabled = true;
     readyBtn.style.display = "none";
     if (opponentReady) {
-      socket.emit("readyButtonClicked", opponentSocketId);
-      startCountdown(10);
-      const nonInitiatorFirstTimeOut = setTimeout(() => {
-        muteAudio(localVideo);
-        startStopWatch();
-        displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds)
-      }, 10000);
-      timeoutIds.push(nonInitiatorFirstTimeOut);
-      const nonInitiatorSecondTimeOut = setTimeout(() => {
-        unmuteAudio(localVideo);
-        muteAudio(remoteVideo);
-        startCountdown(10);
-      }, 70000);
-      timeoutIds.push(nonInitiatorSecondTimeOut);
-      const nonInitiatorThirdTimeOut = setTimeout(() => {
-        startStopWatch();
-        displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
-      }, 80000);
-      timeoutIds.push(nonInitiatorThirdTimeOut);
+      acceptOrquestration();
     } else {
       opponentReady = true;
       socket.emit("readyButtonClicked", opponentSocketId);
@@ -153,28 +135,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   socket.on("opponentReady", () => {
     if (opponentReady) {
-      startCountdown(10);
-      socket.emit("sendWordsToOponent", {
-        to: opponentSocketId,
-        words: wordsForBattle,
-      });
-      const initiatorFirstTimeOut = setTimeout(() => {
-        muteAudio(remoteVideo);
-        displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
-        startStopWatch();
-      }, 10000);
-      timeoutIds.push(initiatorFirstTimeOut);
-      const initiatorSecondTimeOut = setTimeout(() => {
-        unmuteAudio(remoteVideo);
-        muteAudio(localVideo);
-        startCountdown(10);
-      }, 70000);
-      timeoutIds.push(initiatorSecondTimeOut);
-      const initiatorThirdTimeOut = setTimeout(() => {
-        startStopWatch();
-        displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
-      }, 80000);
-      timeoutIds.push(initiatorThirdTimeOut);
+      startOrquestration();
     }
     opponentReady = true;
   });
@@ -290,16 +251,83 @@ document.addEventListener("DOMContentLoaded", async () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
+
+  function clearDynamicContent() {
+    document.getElementById("words").textContent = "";
+    document.getElementById("timer").textContent = "";
+  }
+
+  function startOrquestration() {
+    startCountdown(10);
+    socket.emit("sendWordsToOponent", {
+      to: opponentSocketId,
+      words: wordsForBattle,
+    });
+    
+    const initiatorFirstTimeOut = setTimeout(() => {
+      muteAudio(remoteVideo);
+      displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
+      startStopWatch();
+    }, 10000);
+    timeoutIds.push(initiatorFirstTimeOut);
+    
+    const initiatorSecondTimeOut = setTimeout(() => {
+      unmuteAudio(remoteVideo);
+      muteAudio(localVideo);
+      startCountdown(10);
+    }, 70000);
+    timeoutIds.push(initiatorSecondTimeOut);
+    
+    const initiatorThirdTimeOut = setTimeout(() => {
+      startStopWatch();
+      displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
+    }, 80000);
+    timeoutIds.push(initiatorThirdTimeOut);
+
+    const initiatorFourthTimeOut = setTimeout(() => {
+      endRapBattle();
+    }, 150000);
+
+    timeoutIds.push(initiatorFourthTimeOut);
+  }
+
+  function acceptOrquestration() {
+    socket.emit("readyButtonClicked", opponentSocketId);
+    startCountdown(10);
+    const nonInitiatorFirstTimeOut = setTimeout(() => {
+      muteAudio(localVideo);
+      startStopWatch();
+      displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
+    }, 10000);
+    timeoutIds.push(nonInitiatorFirstTimeOut);
+    const nonInitiatorSecondTimeOut = setTimeout(() => {
+      unmuteAudio(localVideo);
+      muteAudio(remoteVideo);
+      startCountdown(10);
+    }, 70000);
+    timeoutIds.push(nonInitiatorSecondTimeOut);
+    const nonInitiatorThirdTimeOut = setTimeout(() => {
+      startStopWatch();
+      displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
+    }, 80000);
+    timeoutIds.push(nonInitiatorThirdTimeOut);
+    const nonInitiatorFourthTimeOut = setTimeout(() => {
+      endRapBattle();
+    }, 150000);
+
+    timeoutIds.push(nonInitiatorFourthTimeOut);
+  }
+
   function displayWords(words, timeoutIds) {
     const wordsContainer = document.getElementById("words");
-  
+
     words.forEach((word, index) => {
       const delay = index * 10000;
       const timeoutId = setTimeout(() => {
         wordsContainer.textContent = word;
         if (index === words.length - 1) {
           const removeLastWordTimeoutId = setTimeout(() => {
-            wordsContainer.textContent = '';
+            wordsContainer.textContent = "";
           }, 10000);
           timeoutIds.push(removeLastWordTimeoutId);
         }
@@ -309,21 +337,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function getRandomWords(wordList) {
-    const shuffleArray = (array) => {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-      }
-      return array;
-    };
+    const numberOfWords = 12;
+    let selectedWords = [];
 
-    const randomWords = shuffleArray([...wordList]).slice(0, 20);
+    for (let i = 0; i < numberOfWords; i++) {
+      const randomIndex = Math.floor(Math.random() * wordList.length);
+      selectedWords.push(wordList[randomIndex]);
+    }
 
     return {
-      round1ArrayOfWords: randomWords.slice(0, 10),
-      round2ArrayOfWords: randomWords.slice(10, 20),
+      round1ArrayOfWords: selectedWords.slice(0, 6),
+      round2ArrayOfWords: selectedWords.slice(6, 12),
     };
   }
 
@@ -439,11 +463,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       timerDiv.textContent = secondsLeft;
 
       if (secondsLeft === 0) {
+        timerDiv.textContent = "";
         clearInterval(countdown);
       } else {
         secondsLeft--;
       }
     }, 1000);
+    timeoutIds.push(countdown);
   }
 
   function getCookieValue(name) {
@@ -519,6 +545,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function endRapBattle() {
+    clearDynamicContent();
     // Clear all timeouts
     timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
 
