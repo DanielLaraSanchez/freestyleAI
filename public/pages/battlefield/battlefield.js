@@ -133,6 +133,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   socket.on("opponentReady", () => {
     if (opponentReady) {
+      setTimeout(() => {
+        muteAudio(remoteVideo);
+      }, 10000);
+      setTimeout(() => {
+        unmuteAudio(remoteVideo);
+        muteAudio(localVideo);
+
+      }, 20000);
       orquestrateBattle();
     }
     opponentReady = true;
@@ -249,6 +257,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
+
+  function muteAudio(peer) {
+    if (peer.srcObject) {
+      const audioTracks = peer.srcObject.getAudioTracks();
+      if (audioTracks.length > 0) {
+        audioTracks.forEach((track) => (track.enabled = false));
+      }
+    }
+  }
+
+  function unmuteAudio(peer) {
+    if (peer.srcObject) {
+      const audioTracks = peer.srcObject.getAudioTracks();
+      if (audioTracks.length > 0) {
+        audioTracks.forEach((track) => (track.enabled = true));
+      }
+    }
+  }
   async function fetchUserFromServer(nickname) {
     try {
       const response = await fetch(`/auth/getuserbyname?name=${nickname}`);
