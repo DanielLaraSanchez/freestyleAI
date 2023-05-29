@@ -1,7 +1,9 @@
 import { wordList } from "./utilities/words.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log(wordList);
+document.addEventListener("DOMContentLoaded", async () => {
+  let onlineUsers = [];
+  onlineUsers = await GetAllUsersConnectedFromDB();
+
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
   const remoteVideoContainer = document.querySelector(
@@ -111,15 +113,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Modify the readyBtn click event listener
   readyBtn.addEventListener("click", () => {
-    console.log("its being called here before user clicks")
     readyBtn.disabled = true;
     if (opponentReady) {
       // setTimeout(() => {
       //   endRapBattle();
       // }, 10000);
       socket.emit("readyButtonClicked", opponentSocketId);
-     orquestrateBattle();
-      console.log("here the action starts 1");
+      orquestrateBattle();
     } else {
       opponentReady = true;
       socket.emit("readyButtonClicked", opponentSocketId);
@@ -132,9 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   socket.on("opponentReady", () => {
-    console.log("here the action starts 2", opponentReady);
     if (opponentReady) {
-    orquestrateBattle();
+      orquestrateBattle();
     }
     opponentReady = true;
   });
@@ -145,7 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initiateWebRTCConnection(isInitiator);
     socket.on("userDisconnected", (disconnectedSocketId) => {
-      console.log("works");
       if (opponentSocketId === disconnectedSocketId) {
         endRapBattle();
       }
@@ -171,36 +169,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   socket.on("updateUserList", async (users) => {
+    await Promise.all(
+      users.map(async (user) => {
+        const userAlreadyFetched = onlineUsers.some(
+          (u) => u.nickname === user.nickname
+        );
+
+        if (!userAlreadyFetched) {
+          // Fetch the user from the server and add it to our onlineUsers array
+          const fetchedUser = await fetchUserFromServer(user.nickname);
+          onlineUsers.push(fetchedUser);
+        }
+      })
+    );
+    await updateUserList(users);
+
     usersList.innerHTML = "";
-    const onlineUsers = await GetAllUsersConnectedFromDB();
-    // Loop through the onlineUsers array instead of users
-    onlineUsers.forEach((user) => {
-      const listItem = document.createElement("li");
-      listItem.classList.add("user-item");
-      const avatarWrapper = document.createElement("div");
-      const userDBObject = onlineUsers.filter(
-        (u) => u.nickname === user.nickname
-      )[0];
-      const avatar = document.createElement("img");
-      // Set the src attribute of the img element to user.profilePicture (assuming it's base64 encoded)
-      avatar.src =
-        userDBObject.profilePicture &&
-        userDBObject.profilePicture.startsWith("data:image/")
-          ? userDBObject.profilePicture
-          : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
-      avatar.style.width = "80px";
-      avatar.style.height = "80px";
+    usersList.querySelectorAll("li").forEach((li) => {
+      const socketId = li.id.split("-")[1];
+      const userExists = users.find((user) => user.socketId === socketId);
 
-      avatarWrapper.appendChild(avatar);
-      listItem.appendChild(avatarWrapper);
+      if (!userExists) {
+        usersList.removeChild(li);
+      }
+    });
 
-      const userNameWrapper = document.createElement("div");
-      const userName = document.createElement("span");
-      userName.textContent = user.nickname; // Since the user object contains the nickname directly
-      userNameWrapper.appendChild(userName);
-      listItem.appendChild(userNameWrapper);
-
-      usersList.appendChild(listItem);
+    // Insert new users into the list (if not already present)
+    users.forEach((user) => {
+      if (!usersList.querySelector(`#user-${user.socketId}`)) {
+        const listItem = createUserListItem(user, onlineUsers);
+        usersList.appendChild(listItem);
+      }
     });
   });
   socket.on("receiveOffer", async (data) => {
@@ -250,32 +249,118 @@ document.addEventListener("DOMContentLoaded", () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
-function orquestrateBattle() {
-  startCountdown(10);
-        setTimeout(() => {
-          displayRandomWord();
-          startStopWatch();
-      }, 10000);
-      setTimeout(() => {
+  async function fetchUserFromServer(nickname) {
+    try {
+      const response = await fetch(`/auth/getuserbyname?name=${nickname}`);
+      if (!response.ok) {
+        throw new Error("Error fetching user");
+      }
+      const user = await response.json();
+      return user;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  async function updateUserList(connectedUsers) {
+    // Synchronize the onlineUsers array with the connectedUsers array from the server
+    onlineUsers = onlineUsers.filter((user) =>
+      connectedUsers.some(
+        (connectedUser) => connectedUser.nickname === user.nickname
+      )
+    );
+    await connectedUsers.forEach(async (connectedUser) => {
+      const userAlreadyFetched = onlineUsers.some(
+        (user) => user.nickname === connectedUser.nickname
+      );
+
+      if (!userAlreadyFetched) {
+        // Fetch the user from the server and add it to our onlineUsers array
+        await fetchUserFromServer(connectedUser.nickname)
+          .then((fetchedUser) => {
+            onlineUsers.push(fetchedUser);
+          })
+          .catch((error) => console.log(error));
+      }
+    });
+    // First, remove list items that are not present in the connectedUsers list
+    usersList.querySelectorAll("li").forEach((li) => {
+      const socketId = li.id.split("-")[1];
+      const userExists = connectedUsers.find(
+        (user) => user.socketId === socketId
+      );
+
+      if (!userExists) {
+        usersList.removeChild(li);
+      }
+    });
+
+    // Insert new connectedUsers into the list (if not already present)
+    connectedUsers.forEach((user) => {
+      if (!usersList.querySelector(`#user-${user.socketId}`)) {
+        const listItem = createUserListItem(user, onlineUsers);
+        usersList.appendChild(listItem);
+      }
+    });
+  }
+
+  function createUserListItem(user, onlineUsers) {
+    const listItem = document.createElement("li");
+    listItem.classList.add("user-item");
+    const avatarWrapper = document.createElement("div");
+    const userDBObject = onlineUsers.filter(
+      (u) => u.nickname === user.nickname
+    )[0];
+    const avatar = document.createElement("img");
+    if (userDBObject) {
+      avatar.src =
+        userDBObject?.profilePicture &&
+        userDBObject?.profilePicture.startsWith("data:image/")
+          ? userDBObject?.profilePicture
+          : `data:image/jpeg;base64,${userDBObject?.profilePicture}`;
+      avatar.style.width = "80px";
+      avatar.style.height = "80px";
+    }
+
+    avatarWrapper.appendChild(avatar);
+    listItem.appendChild(avatarWrapper);
+
+    const userNameWrapper = document.createElement("div");
+    const userName = document.createElement("span");
+    userName.textContent = user.nickname;
+    userNameWrapper.appendChild(userName);
+    listItem.appendChild(userNameWrapper);
+
+    // Set a unique identifier for the list item element
+    listItem.id = `user-${user.socketId}`;
+
+    return listItem;
+  }
+
+  function orquestrateBattle() {
+    startCountdown(10);
+    setTimeout(() => {
+      displayRandomWord();
+      startStopWatch();
+    }, 10000);
+    setTimeout(() => {
       endRapBattle();
     }, 60000);
-}
+  }
 
-function startStopWatch() {
-  const timerDiv = document.getElementById("timer");
-  let secondsLeft = 60;
-  
-  const countdown = setInterval(function() {
-    timerDiv.textContent = secondsLeft;
-    
-    if (secondsLeft === 0) {
-      clearInterval(countdown);
-    } else {
-      secondsLeft--;
-    }
-  }, 1000);
+  function startStopWatch() {
+    const timerDiv = document.getElementById("timer");
+    let secondsLeft = 60;
 
-}
+    const countdown = setInterval(function () {
+      timerDiv.textContent = secondsLeft;
+
+      if (secondsLeft === 0) {
+        clearInterval(countdown);
+      } else {
+        secondsLeft--;
+      }
+    }, 1000);
+  }
 
   function displayRandomWord() {
     const wordsDiv = document.getElementById("words");

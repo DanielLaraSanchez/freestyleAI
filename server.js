@@ -144,16 +144,6 @@ passport.deserializeUser(async (nickname, done) => {
   }
 });
 
-// app.use((req, res, next) => {
-//   if (
-//     req.header("x-forwarded-proto") !== "https" &&
-//     process.env.NODE_ENV === "production"
-//   ) {
-//     res.redirect(301, `https://${req.header("host")}${req.url}`);
-//   } else {
-//     next();
-//   }
-// });
 
 // Configure the session store
 const store = new MongoDBStore({
@@ -178,14 +168,6 @@ store.on("error", function (error) {
   console.error("Session store error:", error);
 });
 
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  } else {
-    res.redirect("/auth");
-  }
-}
-
 // Initialize Passport.js middleware
 app.use(passport.initialize());
 app.use(passport.session());
@@ -199,10 +181,6 @@ app.use((req, res, next) => {
   );
 });
 
-// app.use(function (req, res, next) {
-//   console.log("User authentication status: ", req.isAuthenticated());
-//   next();
-// });
 
 function redirectToAuthIfNotLoggedIn(req, res, next) {
   if (req.isAuthenticated()) {
@@ -243,6 +221,30 @@ app.get("/landing-page", (req, res) => {
   res.sendFile(
     path.join(__dirname, "public/pages/landing-page", "landingPage.html")
   );
+});
+
+app.get("/auth/getuserbyname", async (req, res) => {
+  const nickname = req.query.name; // Extract the name from the query string
+  const db = client.db("f-raps-db");
+  const usersCollection = db.collection("User");
+
+  try {
+    // Search for the user by nickname in the User collection
+    const user = await usersCollection.findOne(
+      { nickname: nickname },
+      { projection: { _id: 0, password: 0 } }
+    );
+
+    if (user) {
+      // Send the user data (excluding _id and password) to the client
+      res.status(200).send(user);
+    } else {
+      res.status(404).send("User not found");
+    }
+  } catch (error) {
+    console.error("Error in /auth/getuserbyname:", error);
+    res.status(500).send("Server error");
+  }
 });
 
 app.get("/auth/getonlineusers", async (req, res) => {
