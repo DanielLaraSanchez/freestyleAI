@@ -1,7 +1,9 @@
 import { wordList } from "./utilities/words.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log(wordList);
+document.addEventListener("DOMContentLoaded", async () => {
+  let onlineUsers = [];
+  onlineUsers = await GetAllUsersConnectedFromDB();
+  let wordsForBattle = getRandomWords(wordList);
   const fightBtn = document.getElementById("fight-btn");
   const localVideoContainer = document.querySelector(".local-video-container");
   const remoteVideoContainer = document.querySelector(
@@ -18,10 +20,16 @@ document.addEventListener("DOMContentLoaded", () => {
     ".chat-messages-container"
   );
   const readyBtn = document.getElementById("ready-btn");
+  const voteBtn = document.getElementById("vote-btn");
+  readyBtn.style.display = "none";
+  voteBtn.style.display = "none";
 
   let opponentSocketId = null;
   let isInitiator = false;
   let opponentReady = false;
+  let timeoutIds = [];
+  let remoteNickname;
+  let ranking = await getAllUsers();
 
   // WebRTC related
   const configuration = {
@@ -65,11 +73,36 @@ document.addEventListener("DOMContentLoaded", () => {
   //**********************************************
 
   // Fight button click event
+  if (ranking) {
+    displayRanking(ranking);
+  } else {
+    console.log("Failed to fetch ranking");
+  }
+
   if (fightBtn) {
     fightBtn.addEventListener("click", async () => {
       modal.style.display = "block";
       await startMediaCapture();
       socket.emit("requestOpponent");
+      const localNickname = socket.io.opts.query.nickname;
+      document.getElementById("local-nickname-field").innerHTML = localNickname;
+    });
+  }
+
+  if (voteBtn) {
+    voteBtn.addEventListener("click", async () => {
+      const nickname = remoteNickname;
+      try {
+        const response = await fetch(`/vote/${nickname}`);
+        if (response.ok) {
+          const result = await response.json();
+          console.log(result);
+        } else {
+          console.log(`Error: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("Error fetching vote endpoint:", error);
+      }
     });
   }
 
@@ -111,15 +144,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Modify the readyBtn click event listener
   readyBtn.addEventListener("click", () => {
-    console.log("its being called here before user clicks")
     readyBtn.disabled = true;
+    readyBtn.style.display = "none";
     if (opponentReady) {
-      // setTimeout(() => {
-      //   endRapBattle();
-      // }, 10000);
-      socket.emit("readyButtonClicked", opponentSocketId);
-      orquestrateBattle();
-      console.log("here the action starts 1");
+      acceptOrquestration();
     } else {
       opponentReady = true;
       socket.emit("readyButtonClicked", opponentSocketId);
@@ -131,10 +159,13 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Connected to server");
   });
 
+  socket.on("receiveWordsForBattle", (data) => {
+    wordsForBattle = data;
+  });
+
   socket.on("opponentReady", () => {
-    console.log("here the action starts 2", opponentReady);
     if (opponentReady) {
-      orquestrateBattle();
+      startOrquestration();
     }
     opponentReady = true;
   });
@@ -142,10 +173,12 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
+    remoteNickname = data.remoteNickname;
+    document.getElementById("remote-nickname-field").innerHTML =
+      data.remoteNickname;
 
     initiateWebRTCConnection(isInitiator);
     socket.on("userDisconnected", (disconnectedSocketId) => {
-      console.log("works");
       if (opponentSocketId === disconnectedSocketId) {
         endRapBattle();
       }
@@ -171,36 +204,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   socket.on("updateUserList", async (users) => {
+    await Promise.all(
+      users.map(async (user) => {
+        const userAlreadyFetched = onlineUsers.some(
+          (u) => u.nickname === user.nickname
+        );
+
+        if (!userAlreadyFetched) {
+          // Fetch the user from the server and add it to our onlineUsers array
+          const fetchedUser = await fetchUserFromServer(user.nickname);
+          onlineUsers.push(fetchedUser);
+        }
+      })
+    );
+    await updateUserList(users);
+
     usersList.innerHTML = "";
-    const onlineUsers = await GetAllUsersConnectedFromDB();
-    // Loop through the onlineUsers array instead of users
-    onlineUsers.forEach((user) => {
-      const listItem = document.createElement("li");
-      listItem.classList.add("user-item");
-      const avatarWrapper = document.createElement("div");
-      const userDBObject = onlineUsers.filter(
-        (u) => u.nickname === user.nickname
-      )[0];
-      const avatar = document.createElement("img");
-      // Set the src attribute of the img element to user.profilePicture (assuming it's base64 encoded)
-      avatar.src =
-        userDBObject.profilePicture &&
-          userDBObject.profilePicture.startsWith("data:image/")
-          ? userDBObject.profilePicture
-          : `data:image/jpeg;base64,${userDBObject.profilePicture}`;
-      avatar.style.width = "80px";
-      avatar.style.height = "80px";
+    usersList.querySelectorAll("li").forEach((li) => {
+      const socketId = li.id.split("-")[1];
+      const userExists = users.find((user) => user.socketId === socketId);
 
-      avatarWrapper.appendChild(avatar);
-      listItem.appendChild(avatarWrapper);
+      if (!userExists) {
+        usersList.removeChild(li);
+      }
+    });
 
-      const userNameWrapper = document.createElement("div");
-      const userName = document.createElement("span");
-      userName.textContent = user.nickname; // Since the user object contains the nickname directly
-      userNameWrapper.appendChild(userName);
-      listItem.appendChild(userNameWrapper);
-
-      usersList.appendChild(listItem);
+    // Insert new users into the list (if not already present)
+    users.forEach((user) => {
+      if (!usersList.querySelector(`#user-${user.socketId}`)) {
+        const listItem = createUserListItem(user, onlineUsers);
+        usersList.appendChild(listItem);
+      }
     });
   });
   socket.on("receiveOffer", async (data) => {
@@ -229,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageElement = document.createElement("div");
     messageElement.classList.add("chat-message");
     // Add styles
-    messageElement.style.backgroundColor = "#249D93";
+    messageElement.style.backgroundColor = "lightblue";
     messageElement.style.padding = "14px";
     messageElement.style.borderBottomRightRadius = "10px";
     messageElement.style.borderTopRightRadius = "10px";
@@ -243,10 +277,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     messageElement.innerHTML = `
           <div class="chat-message-info">
-            <span style="font-size: small; margin-right:5px; font-weight:400;color: white;" class="chat-message-sender">${data.nickname}</span>
-            <span  style="font-size: small; font-weight:400;color: white;" class="chat-message-time">${timeStamp}</span>
+            <span style="font-size: small; margin-right:5px; font-weight:400;color: #505661;" class="chat-message-sender">${data.nickname}</span>
+            <span  style="font-size: small; font-weight:400;color: #505661;" class="chat-message-time">${timeStamp}</span>
           </div>
-          <div  style="color: white;" class="chat-message-text">${data.message}</div>
+          <div class="chat-message-text">${data.message}</div>
         `;
     chatMessagesContainer.appendChild(messageElement);
     chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
@@ -258,15 +292,254 @@ document.addEventListener("DOMContentLoaded", () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
-  function orquestrateBattle() {
+  function displayRanking(ranking) {
+    // Create a new ul element
+    const ul = document.createElement("ul");
+
+    // Iterate over the ranking data and create li elements for each user
+    ranking.forEach((user) => {
+      const li = document.createElement("li");
+      let profilePicture =
+        user.profilePicture && user.profilePicture.startsWith("data:image/")
+          ? user.profilePicture
+          : `data:image/jpeg;base64,${user.profilePicture}`;
+      li.innerHTML = `
+        <img src="${profilePicture}" alt="${user.nickname}'s profile picture" width="50" height="50">
+        <span style="color:white;">${user.nickname}</span>
+        <span>Points: ${user.points}</span>
+      `;
+      ul.appendChild(li);
+    });
+
+    // Append the ul to the ranking div
+    const rankingDiv = document.getElementById("ranking");
+    rankingDiv.appendChild(ul);
+  }
+  async function getAllUsers() {
+    try {
+      const response = await fetch("/auth/getallusers");
+      if (response.ok) {
+        const ranking = await response.json();
+        console.log(ranking); // Remove this line if you don't want to log the ranking
+        return ranking;
+      } else {
+        console.log(`Error: ${response.status}`);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching getallusers endpoint:", error);
+      return null;
+    }
+  }
+
+  function clearDynamicContent() {
+    document.getElementById("words").textContent = "";
+    document.getElementById("timer").textContent = "";
+    document.getElementById("countdown").textContent = "";
+    document.getElementById("remote-nickname-field").textContent = "";
+  }
+
+  function startOrquestration() {
     startCountdown(10);
-    setTimeout(() => {
-      displayRandomWord();
+    socket.emit("sendWordsToOponent", {
+      to: opponentSocketId,
+      words: wordsForBattle,
+    });
+
+    const initiatorFirstTimeOut = setTimeout(() => {
+      muteAudio(remoteVideo);
+      voteBtn.style.display = "none";
+      displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
       startStopWatch();
     }, 10000);
-    setTimeout(() => {
+    timeoutIds.push(initiatorFirstTimeOut);
+
+    const initiatorSecondTimeOut = setTimeout(() => {
+      unmuteAudio(remoteVideo);
+      muteAudio(localVideo);
+      startCountdown(10);
+    }, 70000);
+    timeoutIds.push(initiatorSecondTimeOut);
+
+    const initiatorThirdTimeOut = setTimeout(() => {
+      startStopWatch();
+      voteBtn.style.display = "inline-block";
+      displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
+    }, 80000);
+    timeoutIds.push(initiatorThirdTimeOut);
+
+    const initiatorFourthTimeOut = setTimeout(() => {
       endRapBattle();
-    }, 60000);
+    }, 150000);
+
+    timeoutIds.push(initiatorFourthTimeOut);
+  }
+
+  function acceptOrquestration() {
+    socket.emit("readyButtonClicked", opponentSocketId);
+    startCountdown(10);
+    const nonInitiatorFirstTimeOut = setTimeout(() => {
+      voteBtn.style.display = "inline-block";
+      muteAudio(localVideo);
+      startStopWatch();
+      displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
+    }, 10000);
+    timeoutIds.push(nonInitiatorFirstTimeOut);
+    const nonInitiatorSecondTimeOut = setTimeout(() => {
+      unmuteAudio(localVideo);
+      voteBtn.style.display = "none";
+
+      muteAudio(remoteVideo);
+      startCountdown(10);
+    }, 70000);
+    timeoutIds.push(nonInitiatorSecondTimeOut);
+    const nonInitiatorThirdTimeOut = setTimeout(() => {
+      startStopWatch();
+      displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
+    }, 80000);
+    timeoutIds.push(nonInitiatorThirdTimeOut);
+    const nonInitiatorFourthTimeOut = setTimeout(() => {
+      endRapBattle();
+    }, 150000);
+
+    timeoutIds.push(nonInitiatorFourthTimeOut);
+  }
+
+  function displayWords(words, timeoutIds) {
+    const wordsContainer = document.getElementById("words");
+
+    words.forEach((word, index) => {
+      const delay = index * 10000;
+      const timeoutId = setTimeout(() => {
+        wordsContainer.textContent = word;
+        if (index === words.length - 1) {
+          const removeLastWordTimeoutId = setTimeout(() => {
+            wordsContainer.textContent = "";
+          }, 10000);
+          timeoutIds.push(removeLastWordTimeoutId);
+        }
+      }, delay);
+      timeoutIds.push(timeoutId);
+    });
+  }
+
+  function getRandomWords(wordList) {
+    const numberOfWords = 12;
+    let selectedWords = [];
+
+    for (let i = 0; i < numberOfWords; i++) {
+      const randomIndex = Math.floor(Math.random() * wordList.length);
+      selectedWords.push(wordList[randomIndex]);
+    }
+
+    return {
+      round1ArrayOfWords: selectedWords.slice(0, 6),
+      round2ArrayOfWords: selectedWords.slice(6, 12),
+    };
+  }
+
+  function muteAudio(peer) {
+    if (peer.srcObject) {
+      const audioTracks = peer.srcObject.getAudioTracks();
+      if (audioTracks.length > 0) {
+        audioTracks.forEach((track) => (track.enabled = false));
+      }
+    }
+  }
+
+  function unmuteAudio(peer) {
+    if (peer.srcObject) {
+      const audioTracks = peer.srcObject.getAudioTracks();
+      if (audioTracks.length > 0) {
+        audioTracks.forEach((track) => (track.enabled = true));
+      }
+    }
+  }
+  async function fetchUserFromServer(nickname) {
+    try {
+      const response = await fetch(`/auth/getuserbyname?name=${nickname}`);
+      if (!response.ok) {
+        throw new Error("Error fetching user");
+      }
+      const user = await response.json();
+      return user;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+  async function updateUserList(connectedUsers) {
+    // Synchronize the onlineUsers array with the connectedUsers array from the server
+    onlineUsers = onlineUsers.filter((user) =>
+      connectedUsers.some(
+        (connectedUser) => connectedUser.nickname === user.nickname
+      )
+    );
+    await connectedUsers.forEach(async (connectedUser) => {
+      const userAlreadyFetched = onlineUsers.some(
+        (user) => user.nickname === connectedUser.nickname
+      );
+
+      if (!userAlreadyFetched) {
+        // Fetch the user from the server and add it to our onlineUsers array
+        await fetchUserFromServer(connectedUser.nickname)
+          .then((fetchedUser) => {
+            onlineUsers.push(fetchedUser);
+          })
+          .catch((error) => console.log(error));
+      }
+    });
+    // First, remove list items that are not present in the connectedUsers list
+    usersList.querySelectorAll("li").forEach((li) => {
+      const socketId = li.id.split("-")[1];
+      const userExists = connectedUsers.find(
+        (user) => user.socketId === socketId
+      );
+
+      if (!userExists) {
+        usersList.removeChild(li);
+      }
+    });
+
+    // Insert new connectedUsers into the list (if not already present)
+    connectedUsers.forEach((user) => {
+      if (!usersList.querySelector(`#user-${user.socketId}`)) {
+        const listItem = createUserListItem(user, onlineUsers);
+        usersList.appendChild(listItem);
+      }
+    });
+  }
+
+  function createUserListItem(user, onlineUsers) {
+    const listItem = document.createElement("li");
+    listItem.classList.add("user-item");
+    const avatarWrapper = document.createElement("div");
+    const userDBObject = onlineUsers.filter(
+      (u) => u.nickname === user.nickname
+    )[0];
+    const avatar = document.createElement("img");
+    if (userDBObject) {
+      avatar.src =
+        userDBObject?.profilePicture &&
+        userDBObject?.profilePicture.startsWith("data:image/")
+          ? userDBObject?.profilePicture
+          : `data:image/jpeg;base64,${userDBObject?.profilePicture}`;
+      avatar.style.width = "80px";
+      avatar.style.height = "80px";
+    }
+
+    avatarWrapper.appendChild(avatar);
+    listItem.appendChild(avatarWrapper);
+
+    const userNameWrapper = document.createElement("div");
+    const userName = document.createElement("span");
+    userName.textContent = user.nickname;
+    userNameWrapper.appendChild(userName);
+    listItem.appendChild(userNameWrapper);
+
+    // Set a unique identifier for the list item element
+    listItem.id = `user-${user.socketId}`;
+
+    return listItem;
   }
 
   function startStopWatch() {
@@ -277,23 +550,13 @@ document.addEventListener("DOMContentLoaded", () => {
       timerDiv.textContent = secondsLeft;
 
       if (secondsLeft === 0) {
+        timerDiv.textContent = "";
         clearInterval(countdown);
       } else {
         secondsLeft--;
       }
     }, 1000);
-
-  }
-
-  function displayRandomWord() {
-    const wordsDiv = document.getElementById("words");
-    while (wordsDiv.firstChild) {
-      wordsDiv.removeChild(wordsDiv.firstChild);
-    }
-    const randomWord = wordList[Math.floor(Math.random() * wordList.length)];
-    const h3 = document.createElement("h3");
-    h3.textContent = randomWord;
-    wordsDiv.appendChild(h3);
+    timeoutIds.push(countdown);
   }
 
   function getCookieValue(name) {
@@ -369,7 +632,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function endRapBattle() {
-    if (readyBtn.disabled === true) readyBtn.disabled = false;
+    clearDynamicContent();
+    // Clear all timeouts
+    timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+
+    // Clear the timeoutIds array
+    timeoutIds = [];
+    readyBtn.disabled = false;
+    readyBtn.style.display = "none";
+    voteBtn.style.display = "none";
+
     opponentReady = false;
     if (opponentSocketId !== null) {
       socket.emit("endConnection", opponentSocketId);
@@ -392,6 +664,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function initiateWebRTCConnection(createOffer) {
+    readyBtn.style.display = "inline-block";
+
     if (createOffer) {
       peerConnection
         .createOffer()
@@ -424,7 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const countdownInterval = setInterval(() => {
       remainingTime--;
-
+      timeoutIds.push(countdownInterval);
       if (remainingTime <= 0) {
         clearInterval(countdownInterval);
         countdownElement.textContent = ""; // Clear the countdown text

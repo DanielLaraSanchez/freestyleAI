@@ -26,6 +26,10 @@ body {
   display: inline-flex;
 }
 
+.user-item {
+  color:white;
+}
+
 .logo {
   font-size: 2rem;
 }
