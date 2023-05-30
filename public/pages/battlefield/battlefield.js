@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let opponentReady = false;
   let timeoutIds = [];
   let remoteNickname;
+  let ranking = await getAllUsers();
 
   // WebRTC related
   const configuration = {
@@ -72,6 +73,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   //**********************************************
 
   // Fight button click event
+  if (ranking) {
+    displayRanking(ranking);
+  } else {
+    console.log("Failed to fetch ranking");
+  }
+
   if (fightBtn) {
     fightBtn.addEventListener("click", async () => {
       modal.style.display = "block";
@@ -84,7 +91,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (voteBtn) {
     voteBtn.addEventListener("click", async () => {
-      const nickname = remoteNickname; 
+      const nickname = remoteNickname;
       try {
         const response = await fetch(`/vote/${nickname}`);
         if (response.ok) {
@@ -94,7 +101,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           console.log(`Error: ${response.status}`);
         }
       } catch (error) {
-        console.error('Error fetching vote endpoint:', error);
+        console.error("Error fetching vote endpoint:", error);
       }
     });
   }
@@ -166,7 +173,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
-    remoteNickname = data.remoteNickname; 
+    remoteNickname = data.remoteNickname;
     document.getElementById("remote-nickname-field").innerHTML =
       data.remoteNickname;
 
@@ -285,6 +292,45 @@ document.addEventListener("DOMContentLoaded", async () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
+  function displayRanking(ranking) {
+    // Create a new ul element
+    const ul = document.createElement("ul");
+
+    // Iterate over the ranking data and create li elements for each user
+    ranking.forEach((user) => {
+      const li = document.createElement("li");
+      let profilePicture =         user.profilePicture &&
+      user.profilePicture.startsWith("data:image/")
+        ? user.profilePicture
+        : `data:image/jpeg;base64,${user.profilePicture}`;
+      li.innerHTML = `
+        <img src="${profilePicture}" alt="${user.nickname}'s profile picture" width="50" height="50">
+        <span>${user.nickname}</span>
+        <span>Points: ${user.points}</span>
+      `;
+      ul.appendChild(li);
+    });
+
+    // Append the ul to the ranking div
+    const rankingDiv = document.getElementById("ranking");
+    rankingDiv.appendChild(ul);
+  }
+  async function getAllUsers() {
+    try {
+      const response = await fetch("/auth/getallusers");
+      if (response.ok) {
+        const ranking = await response.json();
+        console.log(ranking); // Remove this line if you don't want to log the ranking
+        return ranking;
+      } else {
+        console.log(`Error: ${response.status}`);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching getallusers endpoint:", error);
+      return null;
+    }
+  }
 
   function clearDynamicContent() {
     document.getElementById("words").textContent = "";
