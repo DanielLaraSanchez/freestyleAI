@@ -105,6 +105,9 @@
             box-shadow: 0 0 40px rgba(8, 7, 16, 0.6);
             border-radius:10px ;">
                         <ul id="users-list" class="list-group"></ul>
+                        <button id="fight-btn" class="btn btn-sm btn-primary">
+                          Fight
+                        </button>
 
         </div>
       </div>
@@ -164,12 +167,16 @@
       <div id="modal-video-container">
         <div class="video-wrapper local-video-container">
           <!-- Add localVideo here in app.js -->
+          <div id="local-nickname-field"></div>
+
         </div>
         <div id="countdown"></div>
         <div id="words"></div>
         <div id="timer"></div>
 
         <div class="video-wrapper remote-video-container">
+          <div id="remote-nickname-field"></div>
+
           <!-- Add remoteVideo here in app.js -->
         </div>
         <button id="ready-btn">Ready</button>
