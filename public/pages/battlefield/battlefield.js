@@ -20,7 +20,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     ".chat-messages-container"
   );
   const readyBtn = document.getElementById("ready-btn");
+  const voteBtn = document.getElementById("vote-btn");
   readyBtn.style.display = "none";
+  voteBtn.style.display = "none";
 
   let opponentSocketId = null;
   let isInitiator = false;
@@ -147,8 +149,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
 
-
-  document.getElementById("remote-nickname-field").innerHTML = data.remoteNickname;
+    document.getElementById("remote-nickname-field").innerHTML =
+      data.remoteNickname;
 
     initiateWebRTCConnection(isInitiator);
     socket.on("userDisconnected", (disconnectedSocketId) => {
@@ -271,8 +273,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("timer").textContent = "";
     document.getElementById("countdown").textContent = "";
     document.getElementById("remote-nickname-field").textContent = "";
-
-
   }
 
   function startOrquestration() {
@@ -281,23 +281,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       to: opponentSocketId,
       words: wordsForBattle,
     });
-    
+
     const initiatorFirstTimeOut = setTimeout(() => {
       muteAudio(remoteVideo);
+      voteBtn.style.display = "none";
       displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
       startStopWatch();
     }, 10000);
     timeoutIds.push(initiatorFirstTimeOut);
-    
+
     const initiatorSecondTimeOut = setTimeout(() => {
       unmuteAudio(remoteVideo);
       muteAudio(localVideo);
       startCountdown(10);
     }, 70000);
     timeoutIds.push(initiatorSecondTimeOut);
-    
+
     const initiatorThirdTimeOut = setTimeout(() => {
       startStopWatch();
+      voteBtn.style.display = "inline-block";
       displayWords(wordsForBattle.round2ArrayOfWords, timeoutIds);
     }, 80000);
     timeoutIds.push(initiatorThirdTimeOut);
@@ -313,6 +315,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     socket.emit("readyButtonClicked", opponentSocketId);
     startCountdown(10);
     const nonInitiatorFirstTimeOut = setTimeout(() => {
+      voteBtn.style.display = "inline-block";
       muteAudio(localVideo);
       startStopWatch();
       displayWords(wordsForBattle.round1ArrayOfWords, timeoutIds);
@@ -320,6 +323,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     timeoutIds.push(nonInitiatorFirstTimeOut);
     const nonInitiatorSecondTimeOut = setTimeout(() => {
       unmuteAudio(localVideo);
+      voteBtn.style.display = "none";
+
       muteAudio(remoteVideo);
       startCountdown(10);
     }, 70000);
@@ -569,10 +574,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Clear the timeoutIds array
     timeoutIds = [];
-    if (readyBtn.disabled === true) {
-      readyBtn.disabled = false;
-      readyBtn.style.display = "none";
-    }
+    readyBtn.disabled = false;
+    readyBtn.style.display = "none";
+    voteBtn.style.display = "none";
+
     opponentReady = false;
     if (opponentSocketId !== null) {
       socket.emit("endConnection", opponentSocketId);
