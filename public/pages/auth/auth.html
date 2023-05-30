@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,80 +8,173 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="pages/auth/auth.css">
-</head>
-<body>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
 
+    <style media="screen">
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 30px #28272F inset !important;
+        }
+
+        *,
+        *:before,
+        *:after {
+            padding: 0;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #080710;
+        }
+
+        .background {
+            width: 430px;
+            height: 520px;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            top: 50%;
+        }
+
+        .background .shape {
+            height: 200px;
+            width: 200px;
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        .shape:first-child {
+            background: linear-gradient(#1845ad,
+                    #23a2f6);
+            left: -80px;
+            top: -80px;
+        }
+
+        .shape:last-child {
+            background: linear-gradient(to right,
+                    #ff512f,
+                    #f09819);
+            right: -30px;
+            bottom: -80px;
+        }
+
+        .forms {
+            height: 520px;
+            width: 400px;
+            background-color: rgba(255, 255, 255, 0.13);
+            position: absolute;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 40px rgba(8, 7, 16, 0.6);
+            padding: 50px 35px;
+        }
+
+        .forms * {
+            font-family: 'Poppins', sans-serif;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+            outline: none;
+            border: none;
+        }
+
+        .forms h3 {
+            font-size: 32px;
+            font-weight: 500;
+            line-height: 42px;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-top: 30px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        input {
+            display: block;
+            height: 30px !important;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.07);
+            border-radius: 3px;
+            padding: 0 10px;
+
+            font-size: 14px;
+            font-weight: 300;
+            border-bottom: 1px solid green !important;
+        }
+
+        ::placeholder {
+            color: #e5e5e5;
+        }
+
+        button {
+            margin-top: 50px;
+            width: 100%;
+            background-color: #ffffff;
+            color: #080710 !important;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #249D93 !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background">
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
     <div class="container">
         <div class="row">
-            <div class="col s12 m6 offset-m3">
-                <ul class="tabs">
-                    <li class="tab col s6"><a href="#login">Log In</a></li>
-                    <li class="tab col s6"><a href="#signup">Sign Up</a></li>
+            <div   class="col s12 m6 offset-m3">
+                <ul style="  background-color: rgba(255, 255, 255, 0.13); " class="tabs">
+                    <li class="tab col s6"><a  style="color: white!important;" href="#login">Log In</a></li>
+                    <li class="tab col s6"><a style="color: white!important;" href="#signup">Sign Up</a></li>
                 </ul>
             </div>
-            <div id="login" class="col s12 m6 offset-m3">
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title center-align">Log In</span>
+            <div class="forms" id="login">
+                <h3>Login Here</h3>
 
-                        <div class="input-field">
-                            <i class="material-icons prefix">account_circle</i>
-                            <input id="login-nickname" type="text" class="validate">
-                            <label for="login-nickname">Nickname</label>
-                        </div>
-                        <div class="input-field">
-                            <i class="material-icons prefix">lock</i>
-                            <input id="login-password" type="password" class="validate">
-                            <label for="login-password">Password</label>
-                        </div>
-                        <a href="#">Don't have an account yet?</a>
+                <label for="username">Nickname</label>
+                <input type="text" autocomplete="do-not-autofill" id="login-nickname">
 
-                        <p class="center-align">
-                            <button class="btn waves-effect waves-light" id="login-btn">
-                                Log In
-                                <i class="material-icons right">send</i>
-                            </button>
-                        </p>
-                    </div>
-                </div>
+                <label for="password">Password</label>
+                <input type="password" id="login-password" autocomplete="new-passwordasas">
+
+                <button id="login-btn">Log In</button>
             </div>
-            <div id="signup" class="col s12 m6 offset-m3">
-                <div class="card">
-                    <div class="card-content">
-                        <span class="card-title center-align">Sign Up</span>
+            <div class="forms" id="signup">
+                <h3>Sign Up Here</h3>
 
-                        <div class="input-field">
-                            <i class="material-icons prefix">account_circle</i>
-                            <input id="signup-nickname" type="text" class="validate">
-                            <label for="signup-nickname">Nickname</label>
-                        </div>
-                        <div class="input-field">
-                            <i class="material-icons prefix">lock</i>
-                            <input id="signup-password" type="password" class="validate">
-                            <label for="signup-password">Password</label>
-                        </div>
+                <label for="username">Nickname</label>
+                <input type="text" autocomplete="do-not-autofill" id="signup-nickname">
 
-                        <div class="file-field input-field">
-                            <div class="btn">
-                                <span>Profile Picture</span>
-                                <input type="file" id="signup-profile-picture" accept="image/*">
-                            </div>
-                            <div class="file-path-wrapper">
-                                <input class="file-path validate" type="text" placeholder="Upload your profile picture">
-                            </div>
-                        </div>
-
-                        <a href="#">Already have an account?</a>
-
-
-                        <p class="center-align">
-                            <button class="btn waves-effect waves-light" id="signup-btn">
-                                Sign Up
-                                <i class="material-icons right">send</i>
-                            </button>
-                        </p>
+                <label for="password">Password</label>
+                <input type="password"  id="signup-password" autocomplete="new-passwordasas">
+                <div style="margin-top: 30PX;" class="file-field input-field">
+                    <div class="btn">
+                        <span>Upload</span>
+                        <input type="file" id="signup-profile-picture" accept="image/*">
+                    </div>
+                    <div class="file-path-wrapper">
+                        <input style="border-bottom: none !important;" class="file-path validate" type="text" placeholder="Upload your profile picture">
                     </div>
                 </div>
+                <button id="signup-btn"> Sign Up</button>
             </div>
         </div>
     </div>
@@ -88,4 +182,5 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="pages/auth/auth.js"></script>
 </body>
+
 </html>
