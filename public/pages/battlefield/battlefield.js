@@ -74,6 +74,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       modal.style.display = "block";
       await startMediaCapture();
       socket.emit("requestOpponent");
+      const localNickname = socket.io.opts.query.nickname;
+      document.getElementById("local-nickname-field").innerHTML = localNickname;
     });
   }
 
@@ -144,6 +146,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
+
+
+  document.getElementById("remote-nickname-field").innerHTML = data.remoteNickname;
 
     initiateWebRTCConnection(isInitiator);
     socket.on("userDisconnected", (disconnectedSocketId) => {
@@ -264,6 +269,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   function clearDynamicContent() {
     document.getElementById("words").textContent = "";
     document.getElementById("timer").textContent = "";
+    document.getElementById("countdown").textContent = "";
+    document.getElementById("remote-nickname-field").textContent = "";
+
+
   }
 
   function startOrquestration() {
@@ -562,7 +571,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     timeoutIds = [];
     if (readyBtn.disabled === true) {
       readyBtn.disabled = false;
-      readyBtn.style.display = "inline-block";
+      readyBtn.style.display = "none";
     }
     opponentReady = false;
     if (opponentSocketId !== null) {
@@ -620,7 +629,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const countdownInterval = setInterval(() => {
       remainingTime--;
-
+      timeoutIds.push(countdownInterval);
       if (remainingTime <= 0) {
         clearInterval(countdownInterval);
         countdownElement.textContent = ""; // Clear the countdown text

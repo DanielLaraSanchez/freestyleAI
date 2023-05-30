@@ -16,28 +16,33 @@ function setupSocketEvents(io) {
 
   function handleRequestOpponent(socket) {
     waitingUsers.add(socket.id);
-
+  
     if (waitingUsers.size >= 2) {
       let opponentSocketId = getRandomOpponent(waitingUsers);
-
+  
       while (opponentSocketId === socket.id) {
         opponentSocketId = getRandomOpponent(waitingUsers);
       }
-
+  
       waitingUsers.delete(socket.id);
       waitingUsers.delete(opponentSocketId);
-
+  
       const roomId = `${socket.id}-${opponentSocketId}`;
       socket.join(roomId);
       io.sockets.sockets.get(opponentSocketId).join(roomId);
-
+  
+      const localUserNickname = socket.handshake.query.nickname;
+      const remoteUserNickname = io.sockets.sockets.get(opponentSocketId).handshake.query.nickname;
+  
       io.to(socket.id).emit("foundOpponent", {
         socketId: opponentSocketId,
         isInitiator: true,
+        remoteNickname: remoteUserNickname,
       });
       io.to(opponentSocketId).emit("foundOpponent", {
         socketId: socket.id,
         isInitiator: false,
+        remoteNickname: localUserNickname,
       });
     }
   }
