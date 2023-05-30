@@ -190,6 +190,35 @@ function redirectToAuthIfNotLoggedIn(req, res, next) {
   }
 }
 
+async function getUserByNickName(nickname) {
+  const db = client.db("f-raps-db");
+  const usersCollection = db.collection("User");
+
+  return await usersCollection.findOne({ nickname });
+}
+
+async function updateUserPoints(nickname, newPoints) {
+  const db = client.db("f-raps-db");
+  const usersCollection = db.collection("User");
+
+  await usersCollection.updateOne({ nickname }, { $set: { points: newPoints } });
+}
+
+app.get("/vote/:nickname", async (req, res) => {
+  const nickname = req.params.nickname;
+  const user = await getUserByNickName(nickname);
+
+  if (!user) {
+    res.status(404).send({ error: "User not found" });
+    return;
+  }
+
+  const updatedPoints = user.points + 2;
+  await updateUserPoints(nickname, updatedPoints);
+
+  res.status(200).send({ success: true, message: "User points updated", newPoints: updatedPoints });
+});
+
 async function getActiveSessionByNickName(nickname) {
   const db = client.db("f-raps-db");
   const activeSessionsCollection = db.collection("ActiveSessions");
@@ -270,6 +299,25 @@ app.get("/auth/getonlineusers", async (req, res) => {
     res.status(200).send(onlineUsers);
   } catch (error) {
     console.error("Error in /auth/getonlineusers:", error);
+    res.status(500).send("Server error");
+  }
+});
+
+app.get("/auth/getallusers", async (req, res) => {
+  const db = client.db("f-raps-db");
+  const usersCollection = db.collection("User");
+
+  try {
+    // Query the User collection to get all users sorted by 'points' in descending order
+    const allUsers = await usersCollection
+      .find({}, { projection: { _id: 0, password: 0 } })
+      .sort({ points: -1 })
+      .toArray();
+
+    // Send the sorted users array (with nickname, profilePicture and points) to the client
+    res.status(200).send(allUsers);
+  } catch (error) {
+    console.error("Error in /auth/getallusers:", error);
     res.status(500).send("Server error");
   }
 });
@@ -405,6 +453,7 @@ app.post(
           nickname,
           password: hashedPassword,
           profilePicture: profilePictureBase64,
+          points: 0
         });
 
         passport.authenticate("local", (err, user) => {

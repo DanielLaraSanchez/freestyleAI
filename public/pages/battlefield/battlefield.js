@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let isInitiator = false;
   let opponentReady = false;
   let timeoutIds = [];
+  let remoteNickname;
 
   // WebRTC related
   const configuration = {
@@ -78,6 +79,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       socket.emit("requestOpponent");
       const localNickname = socket.io.opts.query.nickname;
       document.getElementById("local-nickname-field").innerHTML = localNickname;
+    });
+  }
+
+  if (voteBtn) {
+    voteBtn.addEventListener("click", async () => {
+      const nickname = remoteNickname; 
+      try {
+        const response = await fetch(`/vote/${nickname}`);
+        if (response.ok) {
+          const result = await response.json();
+          console.log(result);
+        } else {
+          console.log(`Error: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error fetching vote endpoint:', error);
+      }
     });
   }
 
@@ -148,7 +166,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   socket.on("foundOpponent", (data) => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
-
+    remoteNickname = data.remoteNickname; 
     document.getElementById("remote-nickname-field").innerHTML =
       data.remoteNickname;
 
