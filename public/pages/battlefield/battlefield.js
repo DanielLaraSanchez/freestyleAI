@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const messageElement = document.createElement("div");
     messageElement.classList.add("chat-message");
     // Add styles
-    messageElement.style.backgroundColor = "lightblue";
+    messageElement.style.backgroundColor = "#26a69a";
     messageElement.style.padding = "14px";
     messageElement.style.borderBottomRightRadius = "10px";
     messageElement.style.borderTopRightRadius = "10px";
@@ -277,10 +277,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     messageElement.innerHTML = `
           <div class="chat-message-info">
-            <span style="font-size: small; margin-right:5px; font-weight:400;color: #505661;" class="chat-message-sender">${data.nickname}</span>
-            <span  style="font-size: small; font-weight:400;color: #505661;" class="chat-message-time">${timeStamp}</span>
+            <span style="font-size: small; margin-right:5px; font-weight:400;color: white;" class="chat-message-sender">${data.nickname}</span>
+            <span  style="font-size: small; font-weight:400;color: white;" class="chat-message-time">${timeStamp}</span>
           </div>
-          <div class="chat-message-text">${data.message}</div>
+          <div  style="color: white;" class="chat-message-text">${data.message}</div>
         `;
     chatMessagesContainer.appendChild(messageElement);
     chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
@@ -294,26 +294,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   //**********************************************
   function displayRanking(ranking) {
     // Create a new ul element
-    const ul = document.createElement("ul");
+    // const ul = document.createElement("ul");
 
     // Iterate over the ranking data and create li elements for each user
+  let rankingHtml="";
     ranking.forEach((user) => {
-      const li = document.createElement("li");
+      // const li = document.createElement("li");
       let profilePicture =
-        user.profilePicture && user.profilePicture.startsWith("data:image/")
-          ? user.profilePicture
-          : `data:image/jpeg;base64,${user.profilePicture}`;
-      li.innerHTML = `
-        <img src="${profilePicture}" alt="${user.nickname}'s profile picture" width="50" height="50">
-        <span style="color:white;">${user.nickname}</span>
-        <span>Points: ${user.points}</span>
-      `;
-      ul.appendChild(li);
+      user.profilePicture && user.profilePicture.startsWith("data:image/")
+      ? user.profilePicture
+      : `data:image/jpeg;base64,${user.profilePicture}`;
+      rankingHtml+='<div class="ranking-items"><img src="'+profilePicture+'" style="width: 60px; height: 60px;" class="img-thumbnail"><span class="ranking-name">'+user.nickname+'</span><span class="ranking-points">'+user.points+'</span></div>'
+      // li.innerHTML = `
+      //   <img src="${profilePicture}" alt="${user.nickname}'s profile picture" width="50" height="50">
+      //   <span style="color:white;">${user.nickname}</span>
+      //   <span  style="color:white; float:right">Points: ${user.points}</span>
+      // `;
+      // ul.appendChild(li);
     });
 
     // Append the ul to the ranking div
-    const rankingDiv = document.getElementById("ranking");
-    rankingDiv.appendChild(ul);
+    const rankingDiv = document.getElementById("ranking-list-main");
+    rankingDiv.innerHTML=rankingHtml;
   }
   async function getAllUsers() {
     try {

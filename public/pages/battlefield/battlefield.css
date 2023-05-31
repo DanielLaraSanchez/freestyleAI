@@ -1,6 +1,7 @@
 body {
   font-family: 'Roboto', sans-serif;
 }
+
 html,
 body {
   height: 100%;
@@ -22,12 +23,13 @@ body {
   z-index: 20;
   position: relative;
 }
+
 .logo-container {
   display: inline-flex;
 }
 
 .user-item {
-  color:white;
+  color: white;
 }
 
 .logo {
@@ -49,7 +51,8 @@ button {
 }
 
 button:hover {
-  background-color: rgba(128, 0, 128, 0.2); /* violet with opacity */
+  background-color: rgba(128, 0, 128, 0.2);
+  /* violet with opacity */
 }
 
 #signupBtn {
@@ -60,8 +63,10 @@ button:hover {
   max-width: 600px;
   margin: 0 auto;
   text-align: center;
-  margin-bottom: 50px; /* Increase the margin-bottom to 50px */
+  margin-bottom: 50px;
+  /* Increase the margin-bottom to 50px */
 }
+
 .modal {
   display: none;
   position: fixed;
@@ -70,7 +75,8 @@ button:hover {
   top: 0;
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Remove scrolling bars */
+  overflow: hidden;
+  /* Remove scrolling bars */
   background-color: rgba(0, 0, 0, 0.4);
 }
 
@@ -82,11 +88,15 @@ button:hover {
   transform: translate(-50%, -50%);
   padding: 20px;
   border: 1px solid #888;
-  width: 72%; /* 80% of original width */
-  height: 72%; /* 80% of original height */
+  width: 72%;
+  /* 80% of original width */
+  height: 72%;
+  /* 80% of original height */
   text-align: center;
-  overflow: auto; /* Add scrolling only for the modal content */
-  border-radius: 10px; /* Add border radius */
+  overflow: auto;
+  /* Add scrolling only for the modal content */
+  border-radius: 10px;
+  /* Add border radius */
 }
 
 .close {
@@ -106,13 +116,8 @@ button:hover {
 
 
 
-.video-wrapper {
-  width: calc(34% - 10px); /* Make the video 30% smaller */
-  max-width: calc(34% - 10px); /* Make the video 30% smaller */
-  margin-bottom: 20px;
-  border-radius: 10px; /* Add border radius */
-  overflow: hidden; /* Hide video content outside the border radius */
-}
+
+
 .local-video,
 .remote-video {
   width: 100%;
@@ -131,6 +136,7 @@ button:hover {
     transform: scale(1);
     opacity: 1;
   }
+
   100% {
     transform: scale(4);
     opacity: 0;
@@ -147,11 +153,13 @@ button:hover {
   text-align: center;
   border: 1px solid #888;
   padding: 20px;
-  border-radius: 10px; /* Add border radius */
+  border-radius: 10px;
+  /* Add border radius */
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
 }
+
 #users-list {
   list-style-type: none;
   padding: 0;
@@ -173,10 +181,12 @@ button:hover {
   margin-top: 15px;
   text-align: center;
 }
+
 .material-icons {
   font-size: 36px;
   margin-right: 10px;
 }
+
 .main-wrapper {
   position: absolute;
   top: 50%;
@@ -188,24 +198,405 @@ button:hover {
   justify-content: center;
   align-items: center;
 }
-#ranking{
- 
-  background-color: rgba(255, 255, 255, 0.13) !important;
-  
-     border-radius: 10px;
-  backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.13);
-  box-shadow: 0 0 40px rgba(8, 7, 16, 0.6) !important;
- 
-}
-#chat-input{
+
+#chat-input {
   background-color: black;
   border: 1px solid darkgray;
   color: white;
 }
 
-#chat-send-btn{
+#chat-send-btn {
   background-color: black;
   border: 1px solid darkgray;
   color: white;
 }
+
+#nav-bar {
+  background-color: rgba(255, 255, 255, 0.07);
+}
+
+#logo-F {
+  padding: 5px;
+  background-color: red;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-right: 5px;
+  border-radius: 5px;
+}
+
+#ranking {
+  width: 100%;
+  height: 100%;
+  background-color: #080710;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 40px rgba(8, 7, 16, 0.6);
+  border-radius: 10px;
+
+}
+
+#ranking-text {
+  color: white;
+  text-align: center;
+  padding-top: 10px;
+  font-size: 30px;
+  font-weight: 500;
+}
+
+#fight {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 40px rgba(8, 7, 16, 0.6);
+  border-radius: 10px;
+}
+
+#chat-div {
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.13);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 40px rgba(8, 7, 16, 0.6);
+  border-radius: 10px;
+}
+
+.background {
+  width: 430px;
+  height: 520px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  left: 50%;
+  top: 50%;
+}
+
+.background .shape {
+  height: 200px;
+  width: 200px;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.shape:first-child {
+  background: linear-gradient(#810314,
+      #530505);
+  left: -80px;
+  top: -80px;
+}
+
+.shape:last-child {
+  background: linear-gradient(to right,
+      #234fc7,
+      #0e2747);
+  right: -30px;
+  bottom: -80px;
+}
+
+body {
+  background-color: #080710;
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+.header {
+  background-color: #333;
+  padding: 6px 0;
+}
+
+.logo {
+  color: #fff;
+  margin: 0;
+}
+
+#signout-btn {
+  border: none;
+  background-color: transparent;
+  color: #fff;
+  font-weight: bold;
+}
+
+.ranking-main {
+  height: 86%;
+  width: 100%;
+  padding: 10px;
+  overflow-y: auto;
+  padding-left: 26px;
+  padding-right: 26px;
+
+}
+
+
+.ranking-items {
+  width: 100%;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.13);
+  margin-top: 10px;
+  padding: 10px;
+  transition: transform .3s;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.ranking-items:hover {
+  transform: scale(1.1);
+  /* (150% zoom - Note: if the zoom is too large, it will go outside of the viewport) */
+  border: 1px solid yellow;
+
+}
+
+.ranking-name {
+  padding-left: 10px;
+  color: white;
+  font-size: smaller;
+  text-transform: uppercase;
+}
+
+.ranking-points {
+  float: right;
+  padding-top: 21px;
+  font-size: small;
+  color: yellow;
+}
+
+#chat-text {
+  color: white;
+  text-align: center;
+  padding-top: 10px;
+  font-size: 30px;
+  font-weight: 500;
+}
+
+#fight-text {
+  color: white;
+  text-align: center;
+  padding-top: 10px;
+  font-size: 30px;
+  font-weight: 500;
+}
+
+.online-main {
+  height: 87%;
+  width: 100%;
+  padding: 10px;
+  overflow-y: auto;
+  padding-left: 26px;
+  padding-right: 26px;
+}
+
+.online-item {
+  width: 100%;
+  border-bottom: 1px solid darkgray;
+  margin-top: 10px;
+  padding: 10px;
+  transition: transform .3s;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+#online-Image {
+  width: 86px;
+  margin-right: 54px;
+  margin-bottom: 10px;
+}
+
+#ranking-list-main::-webkit-scrollbar {
+  width: 4px !important;
+}
+ 
+#ranking-list-main::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3) !important;
+}
+ 
+#ranking-list-main::-webkit-scrollbar-thumb {
+  background-color: darkgrey !important;
+  outline: 1px solid slategrey !important;
+}
+
+.chat-messages-container::-webkit-scrollbar {
+  width: 4px !important;
+}
+ 
+.chat-messages-container::-webkit-scrollbar-track {
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3) !important;
+}
+ 
+.chat-messages-container::-webkit-scrollbar-thumb {
+  background-color: darkgrey !important;
+  outline: 1px solid slategrey !important;
+}
+
+@property --gap{
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0;
+}
+@property --angle{
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
+#online-Image {
+  --border: 6px;
+  --gap: 12px;
+  --color: #FA6900;
+  
+  width: 120px;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border-radius: 50%;
+  margin: 20px;
+  cursor: pointer;
+  padding: calc(var(--border) + var(--gap));
+  
+  --angle: 90deg;
+  background:
+    radial-gradient(farthest-side,var(--color) 97%,#0000 101%) 85.35% 85.35%,
+    conic-gradient(from calc(180deg - var(--angle)/2),#0000 var(--angle),var(--color) 0),
+    radial-gradient(farthest-side,var(--color) 97%,#0000 101%) 14.65% 85.35%;
+  background-size: var(--border) var(--border),auto;
+  background-repeat: no-repeat;
+  
+  -webkit-mask:
+    radial-gradient(farthest-side, 
+     #000  calc(99%  - calc(var(--border) + var(--gap))),
+     #0000 calc(100% - calc(var(--border) + var(--gap))) 
+           calc(99%  - var(--border)), 
+     #000  calc(100% - var(--border)));
+          mask:
+    radial-gradient(farthest-side, 
+     #000  calc(99%  - calc(var(--border) + var(--gap))),
+     #0000 calc(100% - calc(var(--border) + var(--gap))) 
+           calc(99%  - var(--border)), 
+     #000  calc(100% - var(--border)));
+  transition: --angle .4s,--gap .4s;
+}
+#online-Image:hover {
+  --angle: 0deg;
+  --gap: 5px;
+}
+
+.video-wrapper{
+  width: 200px;
+  height: 200px;
+  border-radius: 100px;
+  overflow: hidden;
+  position: relative;
+  border: 3px solid  orange;
+}
+
+.local-video:root {
+  --red: tomato;
+  --bgColor: bisque;
+}
+
+.local-video {
+  height: 213px !important;
+  width: 280px !important;
+  position: relative;
+  left: 0;
+  top: 0;
+  opacity: 1;
+}
+
+.remote-video {
+  height: 213px !important;
+  width: 280px !important;
+  position: relative;
+  left: 0;
+  top: 0;
+  opacity: 1;
+}
+
+
+
+.modal-content{
+  background-image: url(https://img.rawpixel.com/s3fs-private/rawpixel_images/website_content/rm251-aum-01_1_2.jpg?w=800&dpr=1&fit=default&crop=default&q=65&vib=3&con=3&usm=15&bg=F4F4F3&ixlib=js-2.2.1&s=a6cc66028f73bea111103608c255e031);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Alumni+Sans:wght@400;600;700&display=swap");
+
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: "Alumni Sans", sans-serif;
+	font-size: 16px;
+}
+
+section {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	font-size: 2em;
+	background: #212121;
+	color: #fff;
+	text-transform: uppercase;
+	gap: 30px;
+}
+
+h1 {
+	font-size: 2.5em;
+	text-decoration: underline;
+	@media (max-width: 768px) {
+		font-size: 1.3em;
+	}
+}
+
+.text-shadow {
+	font-style: italic;
+	text-transform: uppercase;
+	color: transparent;
+	-webkit-text-stroke: #fff;
+	-webkit-text-stroke-width: 1px;
+	text-shadow: 2px 2px 10px blue;
+	transition: all 0.5s ease-in-out;
+	text-align: center;
+	letter-spacing: 0.2em;
+	animation: flicker 0.5s ease-in-out infinite alternate;
+
+	&:hover {
+		color: #fff;
+	}
+}
+
+.tags small {
+	@media (max-width: 768px) {
+		font-size: 0.5em;
+	}
+}
+
+@keyframes flicker {
+	0% {
+		opacity: 0.5;
+		text-shadow: 2px 2px 10px blue;
+	}
+	100% {
+		opacity: 1;
+		text-shadow: 2px 2px 20px blue;
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
