@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
   const modal = document.getElementById("modal");
   const closeModal = document.getElementById("close-modal");
-  const usersList = document.getElementById("users-list");
+  const usersList = document.getElementById("usersList");
   const countdownElement = document.getElementById("countdown");
   const signoutBtn = document.getElementById("signout-btn");
   const chatInput = document.getElementById("chat-input");
@@ -204,6 +204,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   socket.on("updateUserList", async (users) => {
+    console.log(users)
     await Promise.all(
       users.map(async (user) => {
         const userAlreadyFetched = onlineUsers.some(
@@ -217,7 +218,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       })
     );
-    await updateUserList(users);
+    console.log(users, onlineUsers)
+    await updateUserList(onlineUsers);
 
     usersList.innerHTML = "";
     usersList.querySelectorAll("li").forEach((li) => {
@@ -263,7 +265,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const messageElement = document.createElement("div");
     messageElement.classList.add("chat-message");
     // Add styles
-    messageElement.style.backgroundColor = "#26a69a";
+    messageElement.style.backgroundColor = "lightblue";
     messageElement.style.padding = "14px";
     messageElement.style.borderBottomRightRadius = "10px";
     messageElement.style.borderTopRightRadius = "10px";
@@ -277,10 +279,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     messageElement.innerHTML = `
           <div class="chat-message-info">
-            <span style="font-size: small; margin-right:5px; font-weight:400;color: white;" class="chat-message-sender">${data.nickname}</span>
-            <span  style="font-size: small; font-weight:400;color: white;" class="chat-message-time">${timeStamp}</span>
+            <span style="font-size: small; margin-right:5px; font-weight:400;color: #505661;" class="chat-message-sender">${data.nickname}</span>
+            <span  style="font-size: small; font-weight:400;color: #505661;" class="chat-message-time">${timeStamp}</span>
           </div>
-          <div  style="color: white;" class="chat-message-text">${data.message}</div>
+          <div class="chat-message-text">${data.message}</div>
         `;
     chatMessagesContainer.appendChild(messageElement);
     chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
@@ -312,6 +314,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // `;
       // ul.appendChild(li);
     });
+
 
     // Append the ul to the ranking div
     const rankingDiv = document.getElementById("ranking-list-main");
@@ -512,38 +515,47 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function createUserListItem(user, onlineUsers) {
-    const listItem = document.createElement("li");
-    listItem.classList.add("user-item");
-    const avatarWrapper = document.createElement("div");
+    const listItem = document.createElement("div");
+    listItem.classList.add("online-item");
+    
+    const center = document.createElement("center");
+  
     const userDBObject = onlineUsers.filter(
       (u) => u.nickname === user.nickname
     )[0];
+  
     const avatar = document.createElement("img");
+    avatar.id = "online-Image";
+    avatar.classList.add("rounded-circle");
+    avatar.classList.add("shadow-4-strong");
+    avatar.classList.add("gap");
+    avatar.alt = "avatar";
     if (userDBObject) {
       avatar.src =
         userDBObject?.profilePicture &&
         userDBObject?.profilePicture.startsWith("data:image/")
           ? userDBObject?.profilePicture
           : `data:image/jpeg;base64,${userDBObject?.profilePicture}`;
-      avatar.style.width = "80px";
-      avatar.style.height = "80px";
     }
-
-    avatarWrapper.appendChild(avatar);
-    listItem.appendChild(avatarWrapper);
-
-    const userNameWrapper = document.createElement("div");
+    center.appendChild(avatar);
+  
     const userName = document.createElement("span");
+    userName.style.color = "white";
     userName.textContent = user.nickname;
-    userNameWrapper.appendChild(userName);
-    listItem.appendChild(userNameWrapper);
-
+    center.appendChild(userName);
+  
+    const userPoints = document.createElement("span");
+    userPoints.style.color = "white";
+    userPoints.textContent = ` Points: ${userDBObject?.points}`;
+    center.appendChild(userPoints);
+  
+    listItem.appendChild(center);
+  
     // Set a unique identifier for the list item element
     listItem.id = `user-${user.socketId}`;
-
+  
     return listItem;
   }
-
   function startStopWatch() {
     const timerDiv = document.getElementById("timer");
     let secondsLeft = 60;
