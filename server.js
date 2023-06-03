@@ -345,18 +345,10 @@ app.get(
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/auth" }),
-  updateGoogleSession, 
+  updateGoogleSession,
   async (req, res) => {
     req.session.loggedIn = true;
     res.cookie("fRapsUser", req.user.nickname);
-    // Insert session information into ActiveSessions collection
-    const db = client.db("f-raps-db");
-    const activeSessionsCollection = db.collection("ActiveSessions");
-    await activeSessionsCollection.insertOne({
-      nickname: req.user.nickname,
-      sessionId: req.session.id,
-      loginTimestamp: new Date().toISOString(),
-    });
     res.redirect("/battlefield");
   }
 );
