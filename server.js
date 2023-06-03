@@ -133,7 +133,7 @@ passport.use(
     {
       clientID: googleClientId,
       clientSecret: googleClientSecret,
-      callbackURL: "/auth/google/callback",
+      callbackURL: "https://frozen-crag-49900.herokuapp.com/auth/google/callback",
     },
     async function (accessToken, refreshToken, profile, done) {
       const db = client.db("f-raps-db");
