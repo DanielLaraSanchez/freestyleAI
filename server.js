@@ -18,6 +18,9 @@ const upload = multer();
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const googleClientId = "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com";
+const googleClientSecret = "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";
 
 const uri =
   "mongodb+srv://f-raps-db:rXwglEkxGfL07wP8@cluster0.fnkdvcm.mongodb.net/?retryWrites=true&w=majority";
@@ -123,6 +126,40 @@ passport.use(
     }
   )
 );
+
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: googleClientId,
+      clientSecret: googleClientSecret,
+      callbackURL: "/auth/google/callback",
+    },
+    async function (accessToken, refreshToken, profile, done) {
+      const db = client.db("f-raps-db");
+      const usersCollection = db.collection("User");
+
+      try {
+        let user = await usersCollection.findOne({ googleId: profile.id });
+
+        if (!user) {
+          user = {
+            googleId: profile.id,
+            nickname: profile.displayName,
+            profilePicture: profile.photos[0].value,
+            points: 0,
+          };
+          await usersCollection.insertOne(user);
+        }
+        done(null, user);
+      } catch (error) {
+        done(error);
+      }
+    }
+  )
+);
+
+
 passport.serializeUser((user, done) => {
   done(null, user.nickname);
 });
@@ -143,6 +180,7 @@ passport.deserializeUser(async (nickname, done) => {
     done(error, null);
   }
 });
+
 
 
 // Configure the session store
@@ -184,8 +222,11 @@ app.use((req, res, next) => {
 
 function redirectToAuthIfNotLoggedIn(req, res, next) {
   if (req.isAuthenticated()) {
+    console.log('User is authenticated');
     next();
   } else {
+    console.log('User not authenticated, redirecting to /auth');
+
     res.redirect("/auth");
   }
 }
@@ -241,6 +282,24 @@ app.get("/", (req, res) => {
     path.join(__dirname, "public/pages/landing-page", "landingPage.html")
   );
 });
+
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/auth" }),
+  (req, res) => {
+    console.log("Response headers:", res.getHeaders()); // Add this line
+    console.log("Response status code:", res.statusCode); // Add this line
+    req.session.loggedIn = true;
+    req.session.isGoogleUser = true; // New line added
+    res.cookie("fRapsUser", req.user.nickname);
+    res.redirect("/battlefield");
+  }
+);
 
 app.get("/auth", (req, res) => {
   res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
@@ -324,11 +383,23 @@ app.get("/auth/getallusers", async (req, res) => {
 
 app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const referer = req.header("Referer");
-  const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
-  const expectedReferer =
-    protocol + "://" + req.header("host") + "/auth";
-  if (referer === expectedReferer) {
-    // Existing code for handling the battlefield request
+  const protocol = req.header("X-Forwarded-Proto") || req.protocol;
+  const expectedReferer = protocol + "://" + req.header("host") + "/";
+  const expectedReferer2 = protocol + "://" + req.header("host") + "/auth";
+  const isGoogleUser = req.session.isGoogleUser;
+  console.log("isGoogleUser:", isGoogleUser);
+  console.log("Referer === expectedReferer:", referer === expectedReferer, referer, expectedReferer, expectedReferer2);
+
+  // Check if the user authenticated through Google
+  if (isGoogleUser) {
+    // Proceed to the battlefield route
+    return res.sendFile(
+      path.join(__dirname, "public/pages/battlefield", "battlefield.html")
+    );
+  }
+
+  // Check if the referer matches the expected referer
+  if (referer === expectedReferer || referer === expectedReferer2) {
     if (req.isAuthenticated() && req.session.loggedIn) {
       const db = client.db("f-raps-db");
       const activeSessionsCollection = db.collection("ActiveSessions");
@@ -340,14 +411,10 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
       if (
         existingSession &&
         existingSession.sessionId === req.session.id &&
-        existingSession.loginTimestamp === req.session.loginTimestamp // Add this condition
+        (existingSession.loginTimestamp === req.session.loginTimestamp || isGoogleUser)
       ) {
         res.sendFile(
-          path.join(
-            __dirname,
-            "public/pages/battlefield",
-            "battlefield.html"
-          )
+          path.join(__dirname, "public/pages/battlefield", "battlefield.html")
         );
       } else {
         res.redirect("/auth");
@@ -360,24 +427,29 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
     res.redirect("/auth");
   }
 });
-
-app.get("/signout", async (req, res) => {
+app.post("/signout", async (req, res) => {
   const db = client.db("f-raps-db");
   const activeSessionsCollection = db.collection("ActiveSessions");
 
   await activeSessionsCollection.deleteOne({ sessionId: req.session.id });
 
-  // Add this line - clear the session cookie
+  // Clear the session cookie
   res.clearCookie("connect.sid", { path: "/" });
 
-  req.logout(() => {
-    // Add this callback function
-    req.session.loggedIn = false;
-    req.session.destroy(); // Destroy the session
-    res.redirect("/auth");
+  req.logout(async () => {
+    if (req.session) {
+      // Clear the isGoogleUser flag
+      req.session.isGoogleUser = false;
+
+      // Logout and destroy the session
+      req.session.loggedIn = false;
+      await new Promise((resolve) => req.session.destroy(resolve));
+    }
+
+    // Send a response indicating success
+    res.status(200).end();
   });
 });
-
 app.post("/auth/login", (req, res, next) => {
   const db = client.db("f-raps-db");
   passport.authenticate("local", (err, user, info) => {

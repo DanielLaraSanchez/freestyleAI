@@ -121,11 +121,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Sign out button click event
-  signoutBtn.addEventListener("click", async function () {
-    clearCookie("fRapsUser");
-    window.location.href = "/signout";
+  signoutBtn.addEventListener("click", function () {
+    signOutGoogle(() => {
+      clearCookie("fRapsUser");
+  
+    fetch("/signout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((response) => {
+      if (response.ok) {
+        window.location.href = "/auth";
+      } else {
+        console.error("Error signing out.");
+      }
+    });
   });
-
+});
   // Chat send button click event
   chatSendBtn.addEventListener("click", () => {
     if (chatInput.value !== "") {
@@ -292,6 +305,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   //**********************************************
   // UTILITY FUNCTIONS
   //**********************************************
+
+  function signOutGoogle(callback) {
+    try {
+      const auth2 = gapi.auth2.getAuthInstance();
+      if (auth2) {
+        auth2.signOut().then(() => {
+          console.log("Google user signed out.");
+          callback();
+        });
+      } else {
+        console.log(
+          "Google user not signed in or no auth2 instance found."
+        );
+        callback();
+      }
+    } catch (error) {
+      console.error("Error in signOutGoogle function:", error);
+      callback();
+    }
+  }
   async function displayRanking() {
     // Create a new ul element
     ranking = await getAllUsers();
