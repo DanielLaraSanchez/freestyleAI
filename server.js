@@ -206,6 +206,25 @@ passport.use(
         // Save the current login timestamp to the user's session
         req.session.loginTimestamp = activeSession.loginTimestamp;
         req.session.profileId = profile.id; // add this line
+
+        const peopleApiResponse = await fetch(
+          "https://people.googleapis.com/v1/people/me?personFields=locales",
+          {
+            headers: {
+              "Authorization": `Bearer ${accessToken}`
+            }
+          }
+        );
+  
+        const peopleApiData = await peopleApiResponse.json();
+        console.log("User country:", peopleApiData);
+
+        if (peopleApiData && peopleApiData.locales && peopleApiData.locales.length > 0) {
+          const userLocale = peopleApiData.locales[0].value;
+  
+          console.log("User country:", userLocale);
+          // Update your user object or save it in the database
+        }
         done(null, user);
       } catch (error) {
         done(error);
