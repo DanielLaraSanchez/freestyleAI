@@ -18,7 +18,12 @@ const upload = multer();
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
-
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+let fetch;
+(async () => {
+  const fetchModule = await import("node-fetch");
+  fetch = fetchModule.default;
+})();
 const uri =
   "mongodb+srv://f-raps-db:rXwglEkxGfL07wP8@cluster0.fnkdvcm.mongodb.net/?retryWrites=true&w=majority";
 
@@ -29,6 +34,26 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+async function updateGoogleSession(req, res, next) {
+  req.session.loginTimestamp = Date.now();
+  if (req.isAuthenticated() && req.user && req.user.nickname) {
+    const db = client.db("f-raps-db");
+    const activeSessionsCollection = db.collection("ActiveSessions");
+console.log(req.session.loginTimestamp, "updategooglesession middleware")
+    const updatedSession = {
+      sessionId: req.session.id,
+      nickname: req.user.nickname,
+      loginTimestamp: req.session.loginTimestamp, // You should have added this to the session in the GoogleStrategy
+    };
+
+    await activeSessionsCollection.updateOne(
+      { nickname: req.user.nickname },
+      { $set: updatedSession },
+      { upsert: true }
+    );
+  }
+  next();
+}
 async function logoutUserByNickname(nickname, userSessionId) {
   try {
     const db = client.db("f-raps-db");
@@ -119,6 +144,71 @@ passport.use(
         }
       } catch (error) {
         done(error); // Error during authentication
+      }
+    }
+  )
+);
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID:
+        "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com",
+      clientSecret: "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",
+      callbackURL: "/auth/google/callback",
+      passReqToCallback: true,
+    },
+    async (req, accessToken, refreshToken, profile, done) => {
+      const db = client.db("f-raps-db");
+      const usersCollection = db.collection("User");
+      const activeSessionsCollection = db.collection("ActiveSessions");
+
+      try {
+        let user = await usersCollection.findOne({ nickname: profile.displayName });
+
+        if (!user) {
+          // If the user doesn't exist, create the user with the Google profile
+          const profilePictureURL = profile.photos[0].value;
+
+          // Fetch the image from the URL and convert it to Base64
+          const imageResponse = await fetch(profilePictureURL);
+          const imageBuffer = await imageResponse.buffer();
+          const profilePictureBase64 = imageBuffer.toString("base64");
+
+          const newUser = {
+            nickname: profile.displayName,
+            password: null,
+            profilePicture: profilePictureBase64,
+            points: 0,
+          };
+          req.session.loggedIn = true;
+          const result = await usersCollection.insertOne(newUser);
+          user = result.ops[0];
+        }
+
+        // Set loggedIn to true in the request session
+        req.session.loggedIn = true;
+
+        // Save session id and login timestamp in the ActiveSessions collection
+        const activeSession = {
+            nickname: user.nickname,
+            sessionId: profile.id,
+            loginTimestamp: Date.now()
+        };
+
+        // Update the active session or insert a new one if it doesn't exist
+        await activeSessionsCollection.updateOne(
+            { nickname: user.nickname },
+            { $set: activeSession },
+            { upsert: true }
+        );
+
+        // Save the current login timestamp to the user's session
+        req.session.loginTimestamp = activeSession.loginTimestamp;
+        req.session.profileId = profile.id; // add this line
+        done(null, user);
+      } catch (error) {
+        done(error);
       }
     }
   )
@@ -246,6 +336,30 @@ app.get("/auth", (req, res) => {
   res.sendFile(path.join(__dirname, "public/pages/auth", "auth.html"));
 });
 
+// Google OAuth routes
+app.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["profile"] })
+);
+
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/auth" }),
+  updateGoogleSession, 
+  async (req, res) => {
+    req.session.loggedIn = true;
+    res.cookie("fRapsUser", req.user.nickname);
+    // Insert session information into ActiveSessions collection
+    const db = client.db("f-raps-db");
+    const activeSessionsCollection = db.collection("ActiveSessions");
+    await activeSessionsCollection.insertOne({
+      nickname: req.user.nickname,
+      sessionId: req.session.id,
+      loginTimestamp: new Date().toISOString(),
+    });
+    res.redirect("/battlefield");
+  }
+);
 app.get("/landing-page", (req, res) => {
   res.sendFile(
     path.join(__dirname, "public/pages/landing-page", "landingPage.html")
@@ -327,21 +441,23 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
   const expectedReferer =
     protocol + "://" + req.header("host") + "/auth";
-  if (referer === expectedReferer) {
+    const expectedReferer2 =  protocol + "://" + req.header("host") + "/";
+  if (referer === expectedReferer || referer === expectedReferer2) {
     // Existing code for handling the battlefield request
     if (req.isAuthenticated() && req.session.loggedIn) {
+
       const db = client.db("f-raps-db");
       const activeSessionsCollection = db.collection("ActiveSessions");
 
       const existingSession = await activeSessionsCollection.findOne({
         nickname: req.user.nickname,
       });
-
       if (
         existingSession &&
         existingSession.sessionId === req.session.id &&
         existingSession.loginTimestamp === req.session.loginTimestamp // Add this condition
       ) {
+
         res.sendFile(
           path.join(
             __dirname,

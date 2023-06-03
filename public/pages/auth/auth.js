@@ -2,22 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   M.Tabs.init(document.querySelectorAll(".tabs"));
 
-  function getCookie(cookieName) {
-    const name = cookieName + "=";
-    const decodedCookies = decodeURIComponent(document.cookie);
-    const cookies = decodedCookies.split(";");
-    for (let i = 0; i < cookies.length; i++) {
-      let c = cookies[i];
-      while (c.charAt(0) == " ") {
-        c = c.substring(1);
-      }
-      if (c.indexOf(name) == 0) {
-        return c.substring(name.length, c.length);
-      }
-    }
-    return "";
-  }
-
   // Get the login and signup button elements
   const loginBtn = document.getElementById("login-btn");
   const signupBtn = document.getElementById("signup-btn");
