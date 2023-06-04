@@ -518,8 +518,7 @@ app.get("/signout", async (req, res) => {
     // Add this callback function
     req.session.loggedIn = false;
     req.session.destroy(); // Destroy the session
-    res.redirect("/auth");
-  });
+    res.redirect("https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue=https://frozen-crag-49900.herokuapp.com/auth")  });
 });
 
 app.post("/auth/login", (req, res, next) => {
