@@ -155,7 +155,7 @@ passport.use(
       clientID:
         "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com",
       clientSecret: "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",
-      callbackURL: "https://frozen-crag-49900.herokuapp.com/auth/google/callback",
+      callbackURL: "/auth/google/callback",
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
@@ -518,7 +518,8 @@ app.get("/signout", async (req, res) => {
     // Add this callback function
     req.session.loggedIn = false;
     req.session.destroy(); // Destroy the session
-    res.redirect("https://www.google.com/accounts/Logout?continue=https://appengine.google.com/_ah/logout?continue=https://frozen-crag-49900.herokuapp.com/auth")  });
+    res.redirect("/auth");
+  });
 });
 
 app.post("/auth/login", (req, res, next) => {

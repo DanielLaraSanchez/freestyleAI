@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   googleLoginBtn.addEventListener("click", async function (event) {
 
-      location.href = "https://frozen-crag-49900.herokuapp.com/auth/google";
+      location.href = "/auth/google";
     
   });
 
