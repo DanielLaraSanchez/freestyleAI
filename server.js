@@ -34,12 +34,12 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
 async function updateGoogleSession(req, res, next) {
   req.session.loginTimestamp = Date.now();
   if (req.isAuthenticated() && req.user && req.user.nickname) {
     const db = client.db("f-raps-db");
     const activeSessionsCollection = db.collection("ActiveSessions");
-console.log(req.session.loginTimestamp, "updategooglesession middleware")
     const updatedSession = {
       sessionId: req.session.id,
       nickname: req.user.nickname,
@@ -164,7 +164,9 @@ passport.use(
       const activeSessionsCollection = db.collection("ActiveSessions");
 
       try {
-        let user = await usersCollection.findOne({ nickname: profile.displayName });
+        let user = await usersCollection.findOne({
+          nickname: profile.displayName,
+        });
 
         if (!user) {
           // If the user doesn't exist, create the user with the Google profile
@@ -191,16 +193,16 @@ passport.use(
 
         // Save session id and login timestamp in the ActiveSessions collection
         const activeSession = {
-            nickname: user.nickname,
-            sessionId: profile.id,
-            loginTimestamp: Date.now()
+          nickname: user.nickname,
+          sessionId: profile.id,
+          loginTimestamp: Date.now(),
         };
-
+    
         // Update the active session or insert a new one if it doesn't exist
         await activeSessionsCollection.updateOne(
-            { nickname: user.nickname },
-            { $set: activeSession },
-            { upsert: true }
+          { nickname: user.nickname },
+          { $set: activeSession },
+          { upsert: true }
         );
 
         // Save the current login timestamp to the user's session
@@ -211,18 +213,20 @@ passport.use(
           "https://people.googleapis.com/v1/people/me?personFields=locales",
           {
             headers: {
-              "Authorization": `Bearer ${accessToken}`
-            }
+              Authorization: `Bearer ${accessToken}`,
+            },
           }
         );
-  
-        const peopleApiData = await peopleApiResponse.json();
-        console.log("User country:", peopleApiData);
 
-        if (peopleApiData && peopleApiData.locales && peopleApiData.locales.length > 0) {
+        const peopleApiData = await peopleApiResponse.json();
+
+        if (
+          peopleApiData &&
+          peopleApiData.locales &&
+          peopleApiData.locales.length > 0
+        ) {
           const userLocale = peopleApiData.locales[0].value;
-  
-          console.log("User country:", userLocale);
+
           // Update your user object or save it in the database
         }
         done(null, user);
@@ -252,7 +256,6 @@ passport.deserializeUser(async (nickname, done) => {
     done(error, null);
   }
 });
-
 
 // Configure the session store
 const store = new MongoDBStore({
@@ -290,7 +293,6 @@ app.use((req, res, next) => {
   );
 });
 
-
 function redirectToAuthIfNotLoggedIn(req, res, next) {
   if (req.isAuthenticated()) {
     next();
@@ -310,7 +312,10 @@ async function updateUserPoints(nickname, newPoints) {
   const db = client.db("f-raps-db");
   const usersCollection = db.collection("User");
 
-  await usersCollection.updateOne({ nickname }, { $set: { points: newPoints } });
+  await usersCollection.updateOne(
+    { nickname },
+    { $set: { points: newPoints } }
+  );
 }
 
 app.get("/vote/:nickname", async (req, res) => {
@@ -325,7 +330,11 @@ app.get("/vote/:nickname", async (req, res) => {
   const updatedPoints = user.points + 2;
   await updateUserPoints(nickname, updatedPoints);
 
-  res.status(200).send({ success: true, message: "User points updated", newPoints: updatedPoints });
+  res.status(200).send({
+    success: true,
+    message: "User points updated",
+    newPoints: updatedPoints,
+  });
 });
 
 async function getActiveSessionByNickName(nickname) {
@@ -450,13 +459,11 @@ app.get("/auth/getallusers", async (req, res) => {
 app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const referer = req.header("Referer");
   const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
-  const expectedReferer =
-    protocol + "://" + req.header("host") + "/auth";
-    const expectedReferer2 =  protocol + "://" + req.header("host") + "/";
+  const expectedReferer = protocol + "://" + req.header("host") + "/auth";
+  const expectedReferer2 = protocol + "://" + req.header("host") + "/";
   if (referer === expectedReferer || referer === expectedReferer2) {
     // Existing code for handling the battlefield request
     if (req.isAuthenticated() && req.session.loggedIn) {
-
       const db = client.db("f-raps-db");
       const activeSessionsCollection = db.collection("ActiveSessions");
 
@@ -468,13 +475,8 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
         existingSession.sessionId === req.session.id &&
         existingSession.loginTimestamp === req.session.loginTimestamp // Add this condition
       ) {
-
         res.sendFile(
-          path.join(
-            __dirname,
-            "public/pages/battlefield",
-            "battlefield.html"
-          )
+          path.join(__dirname, "public/pages/battlefield", "battlefield.html")
         );
       } else {
         res.redirect("/auth");
@@ -486,6 +488,13 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
     // Redirect to the login or another error page when referrer does not match
     res.redirect("/auth");
   }
+});
+
+app.get("/auth/check-session", (req, res) => {
+  if (req.session && req.session.loggedIn) {
+    return res.status(200).json({ isLoggedIn: true });
+  }
+  return res.status(200).json({ isLoggedIn: false });
 });
 
 app.get("/signout", async (req, res) => {
@@ -539,7 +548,7 @@ app.post("/auth/login", (req, res, next) => {
       await activeSessionsCollection.insertOne({
         nickname: user.nickname,
         sessionId: req.session.id,
-        loginTimestamp: req.session.loginTimestamp
+        loginTimestamp: req.session.loginTimestamp,
       });
 
       return res.status(200).end();
@@ -580,7 +589,7 @@ app.post(
           nickname,
           password: hashedPassword,
           profilePicture: profilePictureBase64,
-          points: 0
+          points: 0,
         });
 
         passport.authenticate("local", (err, user) => {

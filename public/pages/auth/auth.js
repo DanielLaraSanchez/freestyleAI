@@ -5,6 +5,23 @@ document.addEventListener("DOMContentLoaded", function () {
   // Get the login and signup button elements
   const loginBtn = document.getElementById("login-btn");
   const signupBtn = document.getElementById("signup-btn");
+  const googleLoginBtn = document.getElementById("google-login-btn");
+
+  googleLoginBtn.addEventListener("click", async function (event) {
+    // Call the new API endpoint to check if the user is already logged in
+    const checkResponse = await fetch("/auth/check-session");
+    const checkResult = await checkResponse.json();
+  
+    if (checkResult.isLoggedIn) {
+      console.log("user already logged in");
+      M.toast({ html: "user already logged in" });
+      event.preventDefault(); // Stop redirection to Google login
+    } else {
+      location.href = "/auth/google";
+    }
+  });
+
+  
 
   loginBtn.addEventListener("click", async function () {
     const nickname = document.getElementById("login-nickname").value;
