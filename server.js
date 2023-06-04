@@ -167,7 +167,15 @@ passport.use(
         let user = await usersCollection.findOne({
           nickname: profile.displayName,
         });
+// Check if the user has an active session for the given nickname
+const existingActiveSession = await activeSessionsCollection.findOne({
+  nickname: user.nickname,
+});
 
+if (existingActiveSession) {
+  // If there is an existing active session, don't allow the user to login
+  return done(new Error("User already has an active session!"), null);
+}
         if (!user) {
           // If the user doesn't exist, create the user with the Google profile
           const profilePictureURL = profile.photos[0].value;

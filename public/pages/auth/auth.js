@@ -8,17 +8,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const googleLoginBtn = document.getElementById("google-login-btn");
 
   googleLoginBtn.addEventListener("click", async function (event) {
-    // Call the new API endpoint to check if the user is already logged in
-    const checkResponse = await fetch("/auth/check-session");
-    const checkResult = await checkResponse.json();
-  
-    if (checkResult.isLoggedIn) {
-      console.log("user already logged in");
-      M.toast({ html: "user already logged in" });
-      event.preventDefault(); // Stop redirection to Google login
-    } else {
+
       location.href = "/auth/google";
-    }
+    
   });
 
   
