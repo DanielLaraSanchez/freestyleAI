@@ -155,7 +155,7 @@ passport.use(
       clientID:
         "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com",
       clientSecret: "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",
-      callbackURL: "/auth/google/callback",
+      callbackURL: "https://sleepy-refuge-64157.herokuapp.com/auth/google/callback",
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
