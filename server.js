@@ -239,6 +239,7 @@ if (existingActiveSession) {
         }
         done(null, user);
       } catch (error) {
+        console.error("Error in Google Strategy:", error);
         done(error);
       }
     }
