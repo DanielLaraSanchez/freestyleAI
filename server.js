@@ -155,7 +155,8 @@ passport.use(
       clientID:
         "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com",
       clientSecret: "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",
-      callbackURL: "https://sleepy-refuge-64157.herokuapp.com/auth/google/callback",
+      callbackURL:
+        "https://sleepy-refuge-64157.herokuapp.com/auth/google/callback",
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
@@ -167,15 +168,7 @@ passport.use(
         let user = await usersCollection.findOne({
           nickname: profile.displayName,
         });
-// Check if the user has an active session for the given nickname
-const existingActiveSession = await activeSessionsCollection.findOne({
-  nickname: user.nickname,
-});
 
-if (existingActiveSession) {
-  // If there is an existing active session, don't allow the user to login
-  return done(new Error("User already has an active session!"), null);
-}
         if (!user) {
           // If the user doesn't exist, create the user with the Google profile
           const profilePictureURL = profile.photos[0].value;
@@ -196,6 +189,16 @@ if (existingActiveSession) {
           user = result.ops[0];
         }
 
+        // Check if the user has an active session for the given nickname
+        const existingActiveSession = await activeSessionsCollection.findOne({
+          nickname: user.nickname,
+        });
+
+        if (existingActiveSession) {
+          // If there is an existing active session, don't allow the user to login
+          return done(new Error("User already has an active session!"), null);
+        }
+
         // Set loggedIn to true in the request session
         req.session.loggedIn = true;
 
@@ -205,7 +208,7 @@ if (existingActiveSession) {
           sessionId: profile.id,
           loginTimestamp: Date.now(),
         };
-    
+
         // Update the active session or insert a new one if it doesn't exist
         await activeSessionsCollection.updateOne(
           { nickname: user.nickname },
