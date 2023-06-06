@@ -156,7 +156,7 @@ passport.use(
         "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com",
       clientSecret: "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",
       callbackURL:
-        "https://sleepy-refuge-64157.herokuapp.com/auth/google/callback",
+        "/auth/google/callback",
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
@@ -262,7 +262,7 @@ passport.deserializeUser(async (nickname, done) => {
     if (user) {
       done(null, user);
     } else {
-      done(new Error("User not found"), null);
+      done(null, null); // Just pass null instead of throwing an error
     }
   } catch (error) {
     done(error, null);
