@@ -295,6 +295,7 @@ store.on("error", function (error) {
 // Initialize Passport.js middleware
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.static(__dirname + "/public/assets/"));
 
 app.use((req, res, next) => {
   setMimeTypes(res, req.url);
