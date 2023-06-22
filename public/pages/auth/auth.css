@@ -198,7 +198,20 @@ button {
   background-color: #000;
   border-radius: 50%;
 }
-
+.file-field .btn,
+.file-field .btn-large,
+.file-field .btn-small {
+  float: none !important;
+}
+.file-path-wrapper {
+  display: none;
+}
+.navbar-brand {
+  color: white;
+  font-weight: 600;
+  font-size: 4rem;
+  margin-left: 2rem;
+}
 @keyframes rotate {
   from {
     transform: translate(-50%, -50%) rotate(0deg);
@@ -237,20 +250,22 @@ button {
     left: -5rem;
   }
 
-  .forms {
+  /* .forms {
     width: 21.875rem;
-  }
+  } */
 }
 
 @media screen and (max-width: 768px) {
   .background {
     left: 24%;
   }
-
-  .forms {
+  input {
+    width: 300px !important;
+  }
+  /* .forms {
     height: auto;
     width: 22rem;
-  }
+  } */
   .mic-img {
     width: 100%;
     left: -13rem;
@@ -262,21 +277,15 @@ button {
   .background {
     display: none;
   }
-  .login-signup {
-    display: none;
+  .forms h3 {
+    font-size: 4rem;
+  }
+  .navbar-brand {
+    font-size: 3rem;
+    margin-left: 0px;
   }
   .forms {
     left: 50%;
-  }
-  .navbar-brand {
-    display: none;
-  }
-  .navbar-brand-two {
-    display: block;
-    font-size: 2rem !important;
-    text-align: center;
-    margin: 0 !important;
-    letter-spacing: 0.25rem;
   }
   #logo-F {
     padding: 0 0.625rem !important;
@@ -290,9 +299,20 @@ button {
     top: 79%;
   }
 }
-
-@media screen and (min-width: 2200px) {
-  .forms {
-    width: 25%;
+@media screen and (max-width: 500px) {
+  input {
+    width: 300px !important;
+  }
+  .forms h3 {
+    font-size: 3.5rem;
+  }
+}
+@media screen and (max-width: 400px) {
+  input {
+    width: 250px !important;
+  }
+  .forms h3 {
+    font-size: 3rem;
+    line-height: 50px;
   }
 }

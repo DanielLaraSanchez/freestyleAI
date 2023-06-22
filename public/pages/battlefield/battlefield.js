@@ -300,25 +300,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Iterate over the ranking data and create li elements for each user
     ranking.forEach((user) => {
       const li = document.createElement("li");
-      let profilePicture = user.profilePicture && user.profilePicture.startsWith("data:image/")
-        ? user.profilePicture
-        : `data:image/jpeg;base64,${user.profilePicture}`;
+      let profilePicture =
+        user.profilePicture && user.profilePicture.startsWith("data:image/")
+          ? user.profilePicture
+          : `data:image/jpeg;base64,${user.profilePicture}`;
       li.innerHTML = `
-        <img src="${profilePicture}" alt="${user.nickname}'s profile picture" width="50" height="50">
-        <span>${user.nickname}</span>
-        <span>Points: ${user.points}</span>
+        <div class="ranking-card-wrapper">
+       <div class="ranking-card-image">
+        <img src="${profilePicture}" alt="Profile" width="40" height="40">
+       </div>
+        <div class="ranking-card-text">
+        <div>${user.nickname}</div>
+        <div><span>Points:</span> ${user.points}</div>
+        </div>
+        </div>
       `;
       ul.appendChild(li);
     });
 
     // Append the ul to the ranking div
     const rankingDiv = document.getElementById("ranking");
-    
+
     // Clear the contents of the rankingDiv before appending the new list
     rankingDiv.innerHTML = "";
 
     rankingDiv.appendChild(ul);
-}
+  }
   async function getAllUsers() {
     try {
       const response = await fetch("/auth/getallusers");
@@ -515,20 +522,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function createUserListItem(user, onlineUsers) {
     const listItem = document.createElement("li");
-    listItem.classList.add("user-item");
+    listItem.classList.add("user-item", "online-item");
+
     const avatarWrapper = document.createElement("div");
     const userDBObject = onlineUsers.filter(
       (u) => u.nickname === user.nickname
     )[0];
     const avatar = document.createElement("img");
+    avatar.classList.add("online-Image");
     if (userDBObject) {
       avatar.src =
         userDBObject?.profilePicture &&
         userDBObject?.profilePicture.startsWith("data:image/")
           ? userDBObject?.profilePicture
           : `data:image/jpeg;base64,${userDBObject?.profilePicture}`;
-      avatar.style.width = "80px";
-      avatar.style.height = "80px";
+      avatar.style.width = "95px";
+      avatar.style.height = "95px";
     }
 
     avatarWrapper.appendChild(avatar);
