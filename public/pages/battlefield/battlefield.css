@@ -30,21 +30,30 @@ body {
   cursor: pointer;
   padding: calc(var(--border) + var(--gap));
   --angle: 90deg;
-  background: radial-gradient(farthest-side, var(--color) 97%, #0000 101%) 85.35% 85.35%,
-    conic-gradient(from calc(180deg - var(--angle) / 2),
+  background: radial-gradient(farthest-side, var(--color) 97%, #0000 101%)
+      85.35% 85.35%,
+    conic-gradient(
+      from calc(180deg - var(--angle) / 2),
       #0000 var(--angle),
-      var(--color) 0),
+      var(--color) 0
+    ),
     radial-gradient(farthest-side, var(--color) 97%, #0000 101%) 14.65% 85.35%;
   background-size: var(--border) var(--border), auto;
   background-repeat: no-repeat;
-  -webkit-mask: radial-gradient(farthest-side,
-      #000 calc(99% - calc(var(--border) + var(--gap))),
-      #0000 calc(100% - calc(var(--border) + var(--gap))) calc(99% - var(--border)),
-      #000 calc(100% - var(--border)));
-  mask: radial-gradient(farthest-side,
-      #000 calc(99% - calc(var(--border) + var(--gap))),
-      #0000 calc(100% - calc(var(--border) + var(--gap))) calc(99% - var(--border)),
-      #000 calc(100% - var(--border)));
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    #000 calc(99% - calc(var(--border) + var(--gap))),
+    #0000 calc(100% - calc(var(--border) + var(--gap)))
+      calc(99% - var(--border)),
+    #000 calc(100% - var(--border))
+  );
+  mask: radial-gradient(
+    farthest-side,
+    #000 calc(99% - calc(var(--border) + var(--gap))),
+    #0000 calc(100% - calc(var(--border) + var(--gap)))
+      calc(99% - var(--border)),
+    #000 calc(100% - var(--border))
+  );
   transition: --angle 0.4s, --gap 0.4s;
 }
 
@@ -83,7 +92,6 @@ body {
 .auth-buttons {
   display: flex;
 }
-
 
 .count-down-text {
   font-size: 2rem;
@@ -181,7 +189,6 @@ button {
   cursor: pointer;
 }
 
-
 .local-video,
 .remote-video {
   width: 100%;
@@ -261,8 +268,6 @@ button {
   margin-right: 10px;
 }
 
-
-
 .main-wrapper {
   position: absolute;
   top: 50%;
@@ -333,9 +338,7 @@ button {
 .bg-chat {
   background-color: #292c2d;
   border-radius: 10px;
-
 }
-
 
 #ranking-main {
   height: 90vh;
@@ -640,7 +643,9 @@ body {
   font-weight: 500;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
-
+#remote-nickname-field {
+  visibility: hidden;
+}
 .online-main {
   height: auto;
   width: 100%;
@@ -736,22 +741,31 @@ body {
   padding: calc(var(--border) + var(--gap));
 
   --angle: 90deg;
-  background: radial-gradient(farthest-side, var(--color) 97%, #0000 101%) 85.35% 85.35%,
-    conic-gradient(from calc(180deg - var(--angle) / 2),
+  background: radial-gradient(farthest-side, var(--color) 97%, #0000 101%)
+      85.35% 85.35%,
+    conic-gradient(
+      from calc(180deg - var(--angle) / 2),
       #0000 var(--angle),
-      var(--color) 0),
+      var(--color) 0
+    ),
     radial-gradient(farthest-side, var(--color) 97%, #0000 101%) 14.65% 85.35%;
   background-size: var(--border) var(--border), auto;
   background-repeat: no-repeat;
 
-  -webkit-mask: radial-gradient(farthest-side,
-      #000 calc(99% - calc(var(--border) + var(--gap))),
-      #0000 calc(100% - calc(var(--border) + var(--gap))) calc(99% - var(--border)),
-      #000 calc(100% - var(--border)));
-  mask: radial-gradient(farthest-side,
-      #000 calc(99% - calc(var(--border) + var(--gap))),
-      #0000 calc(100% - calc(var(--border) + var(--gap))) calc(99% - var(--border)),
-      #000 calc(100% - var(--border)));
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    #000 calc(99% - calc(var(--border) + var(--gap))),
+    #0000 calc(100% - calc(var(--border) + var(--gap)))
+      calc(99% - var(--border)),
+    #000 calc(100% - var(--border))
+  );
+  mask: radial-gradient(
+    farthest-side,
+    #000 calc(99% - calc(var(--border) + var(--gap))),
+    #0000 calc(100% - calc(var(--border) + var(--gap)))
+      calc(99% - var(--border)),
+    #000 calc(100% - var(--border))
+  );
   transition: --angle 0.4s, --gap 0.4s;
 }
 
@@ -773,9 +787,11 @@ body {
   --bgColor: bisque;
 }
 
-.local-video {}
+.local-video {
+}
 
-.remote-video {}
+.remote-video {
+}
 
 .modal-content {
   background-color: #111315;
@@ -858,11 +874,9 @@ h1 {
   }
 }
 
-
 /* Media Queries */
 
 @media (min-width: 320px) and (max-width: 590px) {
-
   #modal-video-container {
     display: flex !important;
     justify-content: space-between !important;
@@ -885,12 +899,12 @@ h1 {
     outline: none !important;
   }
 
-  #modal-video-container {}
+  #modal-video-container {
+  }
 
   .modal-content {
     display: block;
   }
-
 
   .video-wrapper {
     width: 50%;
@@ -899,7 +913,7 @@ h1 {
   }
 
   .count-down-text {
-    font-size: .8rem;
+    font-size: 0.8rem;
     margin: 0 !important;
   }
 
@@ -910,17 +924,18 @@ h1 {
 
   #local-nickname-field,
   #remote-nickname-field {
-    font-size: .8rem;
+    font-size: 0.8rem;
     padding: 5px;
     background-color: transparent;
-    color: white
+    color: white;
   }
-
+  #remote-nickname-field {
+    visibility: hidden;
+  }
   .local-video,
   .remote-video {
     width: 100%;
     height: 100%;
-
   }
 }
 

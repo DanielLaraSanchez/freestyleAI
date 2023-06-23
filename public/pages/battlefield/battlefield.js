@@ -174,6 +174,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     opponentSocketId = data.socketId;
     isInitiator = data.isInitiator;
     remoteNickname = data.remoteNickname;
+    document.getElementById("remote-nickname-field").style.visibility =
+      "visible";
     document.getElementById("remote-nickname-field").innerHTML =
       data.remoteNickname;
 
