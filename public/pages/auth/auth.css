@@ -19,11 +19,13 @@
 
 .btn {
   width: fit-content;
-  background-color: #292c2d !important;
+  background-color: #292c2d;
   border-radius: 0.4rem;
   margin-top: 30px;
 }
-
+.btn:hover {
+  background-color: #292c2d;
+}
 .pointer-cursor {
   cursor: pointer;
 }
@@ -50,6 +52,7 @@ input:focus {
   height: 3.5rem;
   padding-left: 20px;
   padding-right: 20px;
+  margin-bottom: 20px;
 }
 #signup {
   display: none;
@@ -165,6 +168,9 @@ button {
   background-color: #000;
   border-radius: 50%;
 }
+.container {
+  max-width: 100% !important;
+}
 
 @keyframes rotate {
   from {
@@ -204,7 +210,8 @@ button {
   float: none !important;
 }
 .file-path-wrapper {
-  display: none;
+  /* display: none; */
+  padding: 0px !important;
 }
 .navbar-brand {
   color: white;
@@ -314,5 +321,15 @@ button {
   .forms h3 {
     font-size: 3rem;
     line-height: 50px;
+  }
+}
+@media screen and (min-width: 1800px) {
+  .forms {
+    padding-top: 120px;
+  }
+}
+@media screen and (min-width: 2300px) {
+  .forms {
+    padding-top: 180px;
   }
 }

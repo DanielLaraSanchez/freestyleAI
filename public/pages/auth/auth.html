@@ -22,7 +22,6 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
       rel="stylesheet"
     />
-
     <style media="screen">
       input:-webkit-autofill,
       input:-webkit-autofill:hover,
@@ -130,13 +129,28 @@
 
         <div class="file-field input-field">
           <div class="btn">
-            <span>Upload</span>
+            <span>Upload </span>
+            <span
+              class="tick"
+              style="padding-left: 3px; display: none; color: #000"
+              ><svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="1em"
+                viewBox="0 0 448 512"
+                fill="black"
+              >
+                <path
+                  d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"
+                />
+              </svg>
+            </span>
             <input type="file" id="signup-profile-picture" accept="image/*" />
           </div>
           <div class="file-path-wrapper">
             <input
-              style="border-bottom: none !important"
+              style="border-bottom: none !important; box-shadow: none"
               class="file-path validate"
+              id="file-path-wrapper"
               type="text"
               placeholder="Upload your profile picture"
               readonly

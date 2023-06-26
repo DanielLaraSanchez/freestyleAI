@@ -36,12 +36,7 @@
   <body style="">
     <nav class="navbar navbar-expand-lg navbar-dark">
       <a
-        style="
-          color: white;
-          font-weight: 600;
-          font-size: 2rem;
-          margin-left: 0.7rem;
-        "
+        style="color: white; font-weight: 600; font-size: 2rem"
         class="navbar-brand-two"
         href="#"
         ><span id="logo-F">F</span>- RAPS</a
@@ -191,7 +186,9 @@
                 </svg>
               </div>
               <h4 class="card-title">Chat</h4>
-              <div class="chat-messages-container overflow-auto"></div>
+              <div
+                class="chat-messages-container flex-lg-grow-1 overflow-auto"
+              ></div>
               <div class="input-group mt-2">
                 <input
                   id="chat-input"
@@ -217,14 +214,14 @@
         <span id="close-modal" class="close mb-4">&times;</span>
         <div
           id="modal-video-container"
-          class="d-flex flex-column flex-sm-row justify-content-between align-items-center"
+          class="d-flex flex-column flex-sm-row justify-content-between align-items-center h-100"
         >
           <div class="video-wrapper local-video-container">
             <div style="color: #fff" id="local-nickname-field"></div>
           </div>
 
           <div
-            class="count-down-div d-flex flex-column justify-content-between h-100 align-content-center"
+            class="count-down-div d-flex flex-column justify-content-between align-content-center"
           >
             <div>
               <div id="countdown" class="count-down-text mb-4"></div>

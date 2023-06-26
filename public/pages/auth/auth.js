@@ -1,4 +1,9 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const queryString = window.location.search;
+  if (queryString === "?=signup") {
+    document.querySelector("#login").style.display = "none";
+    document.querySelector("#signup").style.display = "block";
+  }
   M.Tabs.init(document.querySelectorAll(".tabs"));
 
   // Get the login and signup button elements
@@ -100,12 +105,19 @@ function loginPageChange() {
   signUpPage.style.display = "block";
 }
 loginPageButton.addEventListener("click", function () {
-  loginPageChange();
+  window.location.href = "/auth?=signup";
 });
 function signnUpPageChange() {
-  loginPage.style.display = "block";
-  signUpPage.style.display = "none";
+  window.location.href = "/auth";
 }
 signUpPagebutton.addEventListener("click", function () {
   signnUpPageChange();
 });
+document
+  .querySelector("#file-path-wrapper")
+  .addEventListener("change", function () {
+    document.querySelector(".file-field .btn").style.backgroundColor =
+      "#cfdddb";
+    document.querySelector(".file-field .btn span").style.color = "#000";
+    document.querySelector(".file-field .btn .tick").style.display = "inline";
+  });
