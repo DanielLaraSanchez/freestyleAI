@@ -470,46 +470,40 @@ app.get("/auth/getallusers", async (req, res) => {
   }
 });
 
-// app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
-//   const referer = req.header("Referer");
-//   const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
-//   const expectedReferer = protocol + "://" + req.header("host") + "/auth";
-//   const expectedReferer2 = protocol + "://" + req.header("host") + "/";
-//   if (referer === expectedReferer || referer === expectedReferer2) {
-//     // Existing code for handling the battlefield request
-//     if (req.isAuthenticated() && req.session.loggedIn) {
-//       const db = client.db("f-raps-db");
-//       const activeSessionsCollection = db.collection("ActiveSessions");
-
-//       const existingSession = await activeSessionsCollection.findOne({
-//         nickname: req.user.nickname,
-//       });
-//       if (
-//         existingSession &&
-//         existingSession.sessionId === req.session.id &&
-//         existingSession.loginTimestamp === req.session.loginTimestamp // Add this condition
-//       ) {
-//         res.sendFile(
-//           path.join(__dirname, "public/pages/battlefield", "battlefield.html")
-//         );
-//       } else {
-//         res.redirect("/auth");
-//       }
-//     } else {
-//       res.redirect("/auth");
-//     }
-//   } else {
-//     // Redirect to the login or another error page when referrer does not match
-//     res.redirect("/auth");
-//   }
-// });
-
 app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
+  const referer = req.header("Referer");
+  const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
+  const expectedReferer = protocol + "://" + req.header("host") + "/auth";
+  const expectedReferer2 = protocol + "://" + req.header("host") + "/";
+  if (referer === expectedReferer || referer === expectedReferer2) {
+    // Existing code for handling the battlefield request
+    if (req.isAuthenticated() && req.session.loggedIn) {
+      const db = client.db("f-raps-db");
+      const activeSessionsCollection = db.collection("ActiveSessions");
 
+      const existingSession = await activeSessionsCollection.findOne({
+        nickname: req.user.nickname,
+      });
+      if (
+        existingSession &&
+        existingSession.sessionId === req.session.id &&
+        existingSession.loginTimestamp === req.session.loginTimestamp // Add this condition
+      ) {
         res.sendFile(
-          path.join(__dirname, "public/pages/battlefield", "battlefield.html"))
-   
+          path.join(__dirname, "public/pages/battlefield", "battlefield.html")
+        );
+      } else {
+        res.redirect("/auth");
+      }
+    } else {
+      res.redirect("/auth");
+    }
+  } else {
+    // Redirect to the login or another error page when referrer does not match
+    res.redirect("/auth");
+  }
 });
+
 
 app.get("/auth/check-session", (req, res) => {
   if (req.session && req.session.loggedIn) {
