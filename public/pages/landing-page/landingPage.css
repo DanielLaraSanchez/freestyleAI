@@ -82,9 +82,10 @@
     transition: transform 0.3s;
   }
   
-.parallax {
-  margin-top: -160px;
+#parallaxText {
+  margin-top: -300px;
 }
+
   body span {
     color: #333;
   }
