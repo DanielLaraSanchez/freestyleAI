@@ -156,7 +156,7 @@ passport.use(
         "79150318208-p6fv2vdnr9jucr0o1glhgq12e74utch8.apps.googleusercontent.com",
       clientSecret: "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",
       callbackURL:
-        "https://www.f-raps/auth/google/callback",
+        "https://www.f-raps.com/auth/google/callback",
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
