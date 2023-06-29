@@ -474,8 +474,9 @@ app.get("/battlefield", redirectToAuthIfNotLoggedIn, async (req, res) => {
   const referer = req.header("Referer");
   const protocol = req.header("X-Forwarded-Proto") || req.protocol; // Use the X-Forwarded-Proto header to determine the protocol
   const expectedReferer = protocol + "://" + req.header("host") + "/auth";
+  const expectedReferer3 = protocol + "://" + req.header("host") + "/auth?=signup" 
   const expectedReferer2 = protocol + "://" + req.header("host") + "/";
-  if (referer === expectedReferer || referer === expectedReferer2) {
+  if (referer === expectedReferer || referer === expectedReferer2 || referer === expectedReferer3) {
     // Existing code for handling the battlefield request
     if (req.isAuthenticated() && req.session.loggedIn) {
       const db = client.db("f-raps-db");
