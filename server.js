@@ -153,10 +153,10 @@ passport.use(
   new GoogleStrategy(
     {
       clientID:
-        "115438774843-25pi2b955aj2unmiipk3appasevot77l.apps.googleusercontent.com",
-      clientSecret: "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",
+        "79150318208-p6fv2vdnr9jucr0o1glhgq12e74utch8.apps.googleusercontent.com",
+      clientSecret: "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",
       callbackURL:
-        "https://sleepy-refuge-64157.herokuapp.com/auth/google/callback",
+        "https://f-raps/auth/google/callback",
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
@@ -220,26 +220,26 @@ passport.use(
         req.session.loginTimestamp = activeSession.loginTimestamp;
         req.session.profileId = profile.id; // add this line
 
-        const peopleApiResponse = await fetch(
-          "https://people.googleapis.com/v1/people/me?personFields=locales",
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
+        // const peopleApiResponse = await fetch(
+        //   "https://people.googleapis.com/v1/people/me?personFields=locales",
+        //   {
+        //     headers: {
+        //       Authorization: `Bearer ${accessToken}`,
+        //     },
+        //   }
+        // );
 
-        const peopleApiData = await peopleApiResponse.json();
+        // const peopleApiData = await peopleApiResponse.json();
 
-        if (
-          peopleApiData &&
-          peopleApiData.locales &&
-          peopleApiData.locales.length > 0
-        ) {
-          const userLocale = peopleApiData.locales[0].value;
+        // if (
+        //   peopleApiData &&
+        //   peopleApiData.locales &&
+        //   peopleApiData.locales.length > 0
+        // ) {
+        //   const userLocale = peopleApiData.locales[0].value;
 
-          // Update your user object or save it in the database
-        }
+        //   // Update your user object or save it in the database
+        // }
         done(null, user);
       } catch (error) {
         console.error("Error in Google Strategy:", error);
